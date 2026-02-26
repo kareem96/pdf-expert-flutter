@@ -1,0 +1,29 @@
+# PDF Expert Project Tasks
+
+- [x] Project Setup
+    - [x] Create project folder `pdf_expert`
+    - [x] Initialize Flutter project
+    - [x] Add dependencies (Riverpod, Syncfusion, etc.)
+    - [x] Set up Clean Architecture structure
+- [x] Domain Layer Implementation
+    - [x] Define entities (PdfDocumentEntity, PdfFieldEntity)
+    - [x] Define repository interfaces (IPdfRepository)
+    - [x] Define use cases (LoadPdf, SavePdf, UpdateField)
+- [x] Data Layer Implementation
+    - [x] Implement Syncfusion PDF Service
+    - [x] Implement Repository implementation
+- [x] Presentation Layer Implementation
+    - [x] Set up Riverpod providers
+    - [x] Build PDF Viewer & Editor UI
+- [x] Features Implementation
+    - [x] Edit AcroForms & Free Text
+    - [x] Save & Share
+    - [x] Delete Functionality (Added)
+    - [x] Precise Text Dragging (Fixed)
+    - [x] Multi-page Support (Fixed)
+- [x] Upcoming Features Implementation
+    - [x] Text Customization (Color, Bold, Italic)
+    - [x] Insert Images / Digital Signatures
+    - [x] Font Family Selection (Google Fonts: Roboto, Merriweather, Courier Prime, Playfair, Dancing Script)
+    - [x] Undo / Redo Actions (skipped — user can re-edit/drag)
+    - [x] UI/UX Refinement (Dark premium theme, gradient AppBar, 2-row toolbar, custom save dialog, back navigation guard)
