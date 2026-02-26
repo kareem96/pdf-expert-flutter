@@ -17,3 +17,7 @@ This document contains a curated list of high-level, premium features planned fo
 ## 4. "Global Watermark Injector" (Pencap Tanda Air Sekali Klik)
 - **Function:** A security feature where users can click "Watermark", type a confidential company name, set opacity (e.g., 30%), and instantly protect their document.
 - **Technical Challenge (Medium):** The application must execute a high-speed looping engine that automatically injects a diagonally slanted text overlay across every single page (which could be 100+ pages) without maxing out device memory or causing UI stuttering.
+
+## 5. "Text Eraser" (Menghapus Teks Asli PDF/Existing Text)
+- **Function:** A tool allowing users to click on already existing, hard-coded text (not form fields) inside the PDF and cleanly delete or "white-out" that specific sentence/word so they can type over it.
+- **Technical Challenge (Extreme):** Normal PDFs are fundamentally structured like a *painting/canvas*, not a Word document. A line of text might not even be a "string" but a bunch of drawn vector lines or disconnected glyphs. Syncfusion does *not* natively provide a `.removeText()` function for existing flattened graphics. We would likely need to build a complex OCR or layout-analysis engine to determine the bounding box of the tapped word, paint a "White Box" directly over that coordinate to hide it visually, or parse the raw byte code (`content stream`) of the PDF to rip out the drawing commands.
