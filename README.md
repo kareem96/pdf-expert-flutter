@@ -1,57 +1,67 @@
-# PDF Expert 🚀
+# PDF Expert - Flutter
 
-Sebuah aplikasi editor PDF modern dan tangguh yang dibangun dengan Flutter. Menggunakan pola **Clean Architecture**, **Riverpod** untuk state management, dan **Syncfusion** (`syncfusion_flutter_pdfviewer`, `syncfusion_flutter_pdf`) untuk logika PDF.
+A premium, full-featured PDF editor and viewer application built with Flutter. PDF Expert allows users to read, annotate, edit, and sign PDF documents locally on their devices with a beautiful, smooth, and highly responsive user interface.
 
-## 🌟 Fitur Utama
+## 🌟 Key Features
 
-Aplikasi ini dapat menangani manipulasi PDF native tingkat lanjut secara mulus:
+### 📄 Advanced PDF Viewer & Manager
+- **Dynamic Recent Files**: Automatically tracks and saves up to 50 of your most recently opened files with beautiful thumbnail previews.
+- **Glassmorphism UI & Animations**: Premium user interface featuring staggered list animations, floating sticky headers, and smooth screen transitions to ensure a modern feel.
+- **Smart Search & Filtering**: Global document search with categorized tab filtering (*All, Originals, Edited by Me*).
 
-- **AcroForm Filling**: Mendeteksi secara otomatis field form PDF standar dan mengubahnya menjadi entitas yang dapat diedit langsung.
-- **Free Text Insertion**: Menggunakan deteksi *Tap* untuk menambahkan elemen teks baru secara presisi di area mana saja pada dokumen PDF.
-- **High-Precision Sync**: Teks yang ditambahkan (Free Text) akan selalu mengikuti *scroll* dan *zoom* dengan sinkronisasi koordinat yang akurat.
-- **Improved Multi-page**: Mendukung file PDF multi-halaman berkat perhitungan dinamis untuk *page-offset*.
-- **Pixel-Perfect Save**: Output PDF yang disimpan mensejajarkan elemen dengan posisi yang terlihat di UI editor secara persis.
-- **Smooth Dragging**: Fitur *Drag & Drop* untuk memindahkan elemen teks ke posisi mana pun di seluruh tingkat zoom.
-- **Delete Functionality**: Memungkinkan pengguna untuk menghapus teks kustom yang telah dimasukkan dengan mudah.
-- **Save with Custom Name**: Pengguna bisa memilih nama file baru sebelum menyimpannya ke memori lokal.
-- **Native Sharing**: Integrasi dengan `share_plus` untuk membagikan hasil editan langsung ke aplikasi lain.
+### ✍️ Powerful PDF Editing Tools
+- **Free Text Injection**: Add custom text anywhere on the PDF with full control over font family, size, color, bold, and italic styling.
+- **Sticky Notes**: Instantly drop highly visible yellow "Post-it" style notes onto your documents for quick annotations or review comments.
+- **Digital Signatures**: Built-in native signature pad supporting freehand drawing to append secure signatures directly onto document pages.
+- **Image Insertion**: Overlay images seamlessly from your gallery onto any specific coordinate of the PDF.
+- **Drag, Drop, and Resize**: Interactively move your signatures, images, and text overlays with touch gestures before committing the save.
 
-## 🛠 Fitur Mendatang (Next Tasks)
+### 🛡️ Secure Core & Sync
+- **AcroForm Compatibility**: Fully supports filling out existing native PDF forms (text boxes, checkboxes).
+- **Intelligent Flattening**: Custom engine algorithms to safely flatten annotations and purge bugged native rendering layers, ensuring your exported PDF looks identical to your screen across all viewers.
+- **Draft States**: Remembers the edits and modifications you haven't saved yet, allowing you to resume your work later.
+- **Quick Share**: Native intent integration to quickly share your modified documents via WhatsApp, Email, etc.
 
-Pengembangan PDF Expert akan terus dilanjutkan! Ini adalah target fitur selanjutnya:
+## 🛠️ Technology Stack & Architecture
 
-- [ ] **Kustomisasi Teks (Warna, Bold, Italic)**
-- [ ] **Dukungan Menyisipkan Gambar & Tanda Tangan (Signature)**
-- [ ] **Fungsi Undo / Redo**
-- [ ] **UI/UX Refinement (Modern & Premium Look)**
+This application strictly adheres to **Clean Architecture** principles, dividing the codebase into `Domain`, `Data`, and `Presentation` layers to ensure maximum scalability and testability.
 
-## 📁 Gambaran Arsitektur
+### Primary Technologies
+- **Framework**: [Flutter](https://flutter.dev/) (Dart)
+- **State Management**: [Riverpod 2.0+](https://riverpod.dev/) (with Code Generation `riverpod_generator`)
+- **PDF Engine**: [Syncfusion Flutter PDF Viewer](https://pub.dev/packages/syncfusion_flutter_pdfviewer) & [Syncfusion Flutter PDF](https://pub.dev/packages/syncfusion_flutter_pdf)
+- **Immutable State**: [Freezed](https://pub.dev/packages/freezed) & `json_serializable`
 
-### Domain Layer (Inti)
-- **Entities**: `PdfDocumentEntity`, `PdfFieldEntity`.
-- **Use Cases**: `LoadPdfUseCase`, `SavePdfUseCase`.
-- **Repository Interface**: `IPdfRepository`.
+### UI & Utility Packages
+- **Animations**: `flutter_animate`, `flutter_staggered_animations`
+- **File System**: `file_picker`, `path_provider`
+- **Native OS Hooks**: `share_plus`, `shared_preferences`
+- **Typography**: `google_fonts`
+- **Colors**: `flutter_colorpicker`
 
-### Data Layer
-- **SyncfusionPdfService**: *Core logic* untuk mem-parsing, merender, dan memanipulasi *bytes* PDF ke file.
-- **PdfRepositoryImpl**: Implementasi konkret yang bertugas atas file lokal dan fitur sharing.
+## 🚀 Getting Started
 
-### Presentation Layer
-- **PdfEditorProvider**: Mengelola UI *state* untuk dokumen yang sedang aktif.
-- **PdfEditorPage**: Tampilan UI utama dengan file picking, render PDF, logik koordinasi *drag/drop*, dan *save dialog*.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/kareem96/pdf-expert-flutter.git
+   cd pdf_expert
+   ```
 
-## 🚀 Cara Penggunaan
-
-1. **Clone repository ini**
-2. **Install dependencies**: 
+2. **Install dependencies**
    ```bash
    flutter pub get
    ```
-3. **Generate kode Freezed/Riverpod** (jika ada perubahan entity/provider):
+
+3. **Generate Riverpod & Freezed classes**
    ```bash
-   dart run build_runner build --delete-conflicting-outputs
+   flutter pub run build_runner build --delete-conflicting-outputs
    ```
-4. **Jalankan aplikasi**:
+
+4. **Run the App**
    ```bash
    flutter run
    ```
+
+## 📝 License
+
+This project is intended for private use. All rights reserved.
