@@ -262,6 +262,74 @@ class SyncfusionPdfService {
               ),
             );
             print('PdfService: Successfully drew text (no-wrap) at [${fieldEntity.x}, ${fieldEntity.y}]');
+          } else if (fieldEntity.type == PdfFieldType.eraser) {
+            final String bgColorHex = fieldEntity.backgroundColor ?? '0xFFFFFFFF';
+            final Color flutterColor = Color(int.parse(bgColorHex));
+            final PdfColor pdfColor = PdfColor(
+              (flutterColor.r * 255.0).round().clamp(0, 255),
+              (flutterColor.g * 255.0).round().clamp(0, 255),
+              (flutterColor.b * 255.0).round().clamp(0, 255),
+            );
+
+            page.graphics.drawRectangle(
+              brush: PdfSolidBrush(pdfColor),
+              bounds: Rect.fromLTWH(
+                fieldEntity.x, 
+                fieldEntity.y, 
+                fieldEntity.width, 
+                fieldEntity.height,
+              ),
+            );
+            print('PdfService: Successfully drew Eraser box at [${fieldEntity.x}, ${fieldEntity.y}]');
+          } else if (fieldEntity.type == PdfFieldType.marker) {
+            final String type = fieldEntity.value ?? 'check';
+            
+            // Extract color
+            final Color flutterColor = Color(int.parse(fieldEntity.textColor));
+            final PdfColor pdfColor = PdfColor(
+              (flutterColor.r * 255.0).round().clamp(0, 255),
+              (flutterColor.g * 255.0).round().clamp(0, 255),
+              (flutterColor.b * 255.0).round().clamp(0, 255),
+            );
+            
+            final PdfBrush brush = PdfSolidBrush(pdfColor);
+            final Rect rect = Rect.fromLTWH(
+              fieldEntity.x, 
+              fieldEntity.y, 
+              fieldEntity.width, 
+              fieldEntity.height,
+            );
+
+            if (type == 'square') {
+              page.graphics.drawRectangle(brush: brush, bounds: rect);
+            } else if (type == 'circle') {
+              page.graphics.drawEllipse(rect, brush: brush); 
+            } else if (type == 'check') {
+              final PdfPen pen = PdfPen(pdfColor, width: rect.width * 0.15);
+              page.graphics.drawLine(
+                pen, 
+                Offset(rect.left + rect.width * 0.2, rect.top + rect.height * 0.5), 
+                Offset(rect.left + rect.width * 0.45, rect.top + rect.height * 0.8)
+              );
+              page.graphics.drawLine(
+                pen, 
+                Offset(rect.left + rect.width * 0.45, rect.top + rect.height * 0.8), 
+                Offset(rect.left + rect.width * 0.85, rect.top + rect.height * 0.25)
+              );
+            } else if (type == 'close') {
+              final PdfPen pen = PdfPen(pdfColor, width: rect.width * 0.15);
+              page.graphics.drawLine(
+                pen, 
+                Offset(rect.left + rect.width * 0.25, rect.top + rect.height * 0.25), 
+                Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.75)
+              );
+              page.graphics.drawLine(
+                pen, 
+                Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.25), 
+                Offset(rect.left + rect.width * 0.25, rect.top + rect.height * 0.75)
+              );
+            }
+            print('PdfService: Successfully drew marker ($type) at [${fieldEntity.x}, ${fieldEntity.y}]');
           }
         } catch (e, st) {
           print('PdfService ERROR drawing field ${fieldEntity.name}: $e\n$st');
@@ -318,5 +386,53 @@ class SyncfusionPdfService {
       print('PdfService: Could not determine page index for field ${field.name}');
     }
     return 0;
+  }
+
+  /// Extracts the word bounding box at the tapped coordinates (x, y) 
+  Future<Rect?> extractWordBoundsAt(String filePath, int pageIndex, double x, double y, {double pad = 6.0}) async {
+    try {
+      final Uint8List bytes = await File(filePath).readAsBytes();
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      
+      final PdfTextExtractor extractor = PdfTextExtractor(document);
+      final List<TextLine> lines = extractor.extractTextLines(startPageIndex: pageIndex, endPageIndex: pageIndex);
+      
+      // Deteksi toleransi sentuhan (Hitbox pad) dinamik mengikuti rasio zoom.
+      final Rect touchHitbox = Rect.fromLTWH(x - pad, y - pad, pad * 2, pad * 2);
+      final Offset tapPoint = Offset(x, y);
+
+      TextWord? closestWord;
+      double minDistance = double.infinity;
+
+      for (TextLine line in lines) {
+        for (TextWord word in line.wordCollection) {
+          if (word.bounds.overlaps(touchHitbox)) {
+            // Calculate distance to tap point to find the single most relevant word
+            final Offset wordCenter = Offset(
+              word.bounds.left + (word.bounds.width / 2),
+              word.bounds.top + (word.bounds.height / 2),
+            );
+            final double distance = (wordCenter - tapPoint).distance;
+
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestWord = word;
+            }
+          }
+        }
+      }
+      
+      document.dispose();
+
+      if (closestWord != null) {
+        // Expand kotaknya sedikit saja agar 'tighter' dan tidak menimpa garis field di sekitarnya
+        return closestWord.bounds.inflate(0.5);
+      }
+      
+      return null;
+    } catch (e) {
+      print('PdfService ERROR: extractWordBoundsAt failed: $e');
+      return null;
+    }
   }
 }

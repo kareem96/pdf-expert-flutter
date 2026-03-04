@@ -256,6 +256,66 @@ class PdfEditor extends _$PdfEditor {
     });
   }
 
+  void addEraser(double x, double y, double width, double height, int pageIndex, {String backgroundColor = '0xFFFFFFFF'}) {
+    state.whenData((doc) {
+      if (doc == null) return;
+      
+      final String uniqueId = 'eraser_${DateTime.now().microsecondsSinceEpoch}';
+      final newField = PdfFieldEntity(
+        id: uniqueId,
+        name: 'Eraser $uniqueId',
+        type: PdfFieldType.eraser,
+        value: '', // Kosong karena ini hanya box warna
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        pageIndex: pageIndex,
+        backgroundColor: backgroundColor,
+        isModified: true,
+        isNewField: true,
+      );
+      
+      final newState = doc.copyWith(
+        fields: [...doc.fields, newField],
+        isModified: true,
+      );
+      
+      state = AsyncValue.data(newState);
+      _pushHistory(newState);
+    });
+  }
+
+  void addMarker(String markerType, double x, double y, double width, double height, int pageIndex, {String color = '0xFF000000'}) {
+    state.whenData((doc) {
+      if (doc == null) return;
+      
+      final String uniqueId = 'marker_${DateTime.now().microsecondsSinceEpoch}';
+      final newField = PdfFieldEntity(
+        id: uniqueId,
+        name: 'Marker $uniqueId',
+        type: PdfFieldType.marker,
+        value: markerType, // 'check', 'close', 'square', 'circle'
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        pageIndex: pageIndex,
+        textColor: color,
+        isModified: true,
+        isNewField: true,
+      );
+      
+      final newState = doc.copyWith(
+        fields: [...doc.fields, newField],
+        isModified: true,
+      );
+      
+      state = AsyncValue.data(newState);
+      _pushHistory(newState);
+    });
+  }
+
   void addImage(double x, double y, String imagePath, int pageIndex, {bool isSignature = false}) {
     state.whenData((doc) {
       if (doc == null) return;

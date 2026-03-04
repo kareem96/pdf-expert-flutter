@@ -7,6 +7,8 @@ enum PdfFieldType {
   checkBox,
   signature,
   image,
+  eraser,
+  marker,
   unknown,
 }
 

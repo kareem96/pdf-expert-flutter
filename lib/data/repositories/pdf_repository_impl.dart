@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../domain/entities/pdf_document_entity.dart';
@@ -13,6 +14,11 @@ class PdfRepositoryImpl implements IPdfRepository {
   @override
   Future<PdfDocumentEntity> loadPdf(String path) {
     return pdfService.parsePdf(path);
+  }
+
+  @override
+  Future<Rect?> extractWordBounds(String path, int pageIndex, double x, double y, {double pad = 10.0}) {
+    return pdfService.extractWordBoundsAt(path, pageIndex, x, y, pad: pad);
   }
 
   @override
