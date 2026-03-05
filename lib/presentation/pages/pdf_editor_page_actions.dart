@@ -61,7 +61,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
        context: context,
        builder: (context) {
          return AlertDialog(
-           title: const Text(AppStrings.drawSignature),
+           title: Text(AppStrings.drawSignature),
            content: Container(
              color: Colors.grey.shade200,
              width: 300,
@@ -74,11 +74,11 @@ extension _PdfEditorActions on _PdfEditorPageState {
            actions: [
              TextButton(
                onPressed: () => signatureController.clear(),
-               child: const Text(AppStrings.clear, style: TextStyle(color: Colors.red)),
+               child: Text(AppStrings.clear, style: const TextStyle(color: Colors.red)),
              ),
              TextButton(
                onPressed: () => Navigator.pop(context),
-               child: const Text(AppStrings.cancel),
+               child: Text(AppStrings.cancel),
              ),
              TextButton(
                onPressed: () async {
@@ -96,7 +96,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
                    Navigator.pop(context);
                  }
                },
-               child: const Text(AppStrings.add),
+               child: Text(AppStrings.add),
              ),
            ],
          );
@@ -120,7 +120,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDState) => AlertDialog(
-          title: const Text(AppStrings.savePdf),
+          title: Text(AppStrings.savePdf),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -181,8 +181,8 @@ extension _PdfEditorActions on _PdfEditorPageState {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text(AppStrings.cancel)),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text(AppStrings.save)),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppStrings.cancel)),
+            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(AppStrings.save)),
           ],
         ),
       ),
@@ -326,12 +326,12 @@ extension _PdfEditorActions on _PdfEditorPageState {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text(AppStrings.textNotFoundTitle, style: TextStyle(color: Colors.amber)),
-          content: const Text(AppStrings.textNotFoundBody),
+          title: Text(AppStrings.textNotFoundTitle, style: const TextStyle(color: Colors.amber)),
+          content: Text(AppStrings.textNotFoundBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text(AppStrings.gotIt),
+              child: Text(AppStrings.gotIt),
             ),
           ],
         ),
@@ -364,13 +364,13 @@ extension _PdfEditorActions on _PdfEditorPageState {
           title: Text(AppStrings.optionsTitle(field.type.name)),
           content: Text(AppStrings.deleteConfirmation(field.type.name)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppStrings.cancel)),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppStrings.cancel)),
             TextButton(
               onPressed: () {
                  ref.read(pdfEditorProvider.notifier).removeField(field.id);
                  Navigator.pop(context);
               },
-              child: const Text(AppStrings.delete, style: TextStyle(color: Colors.red)),
+              child: Text(AppStrings.delete, style: const TextStyle(color: Colors.red)),
             ),
           ],
         )

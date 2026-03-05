@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'custom_toast.dart';
 
 class MlKitBottomBar extends StatelessWidget {
   final bool useMlKit;
@@ -16,7 +15,7 @@ class MlKitBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: const Color(0xFF1E1E2E),
+      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E2E) : Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -26,7 +25,10 @@ class MlKitBottomBar extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'AI Scan (ML Kit) for Scanned PDFs', 
-                style: GoogleFonts.inter(color: Colors.white, fontSize: 12)
+                style: GoogleFonts.inter(
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87, 
+                  fontSize: 12
+                )
               ),
             ],
           ),
@@ -35,12 +37,6 @@ class MlKitBottomBar extends StatelessWidget {
             activeColor: Colors.amber,
             onChanged: (val) {
               onChanged(val);
-              if (val) {
-                CustomToast.show(
-                  context, 
-                  message: 'AI ML Kit Engine Enabled. Scanned documents will now be analyzed.'
-                );
-              }
             },
           ),
         ],

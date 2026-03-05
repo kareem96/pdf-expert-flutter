@@ -34,13 +34,21 @@ class ToolbarButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: isActive ? Colors.amber : Colors.white),
+            Icon(
+              icon, 
+              size: 20, 
+              color: isActive 
+                ? Colors.amber 
+                : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black54)
+            ),
             const SizedBox(height: 4),
             Text(
               label, 
               style: GoogleFonts.inter(
                 fontSize: 10, 
-                color: isActive ? Colors.amber : Colors.white70,
+                color: isActive 
+                    ? Colors.amber 
+                    : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black45),
               ),
             ),
           ],

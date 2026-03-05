@@ -1,0 +1,122 @@
+Analyzing pdf_expert...                                         
+
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:11:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:24:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:34:9 • avoid_print
+warning • The operand can't be 'null', so the condition is always 'true' • lib/data/datasources/syncfusion_pdf_service.dart:48:16 • unnecessary_null_comparison
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:49:9 • avoid_print
+warning • The operand can't be 'null', so the condition is always 'true' • lib/data/datasources/syncfusion_pdf_service.dart:50:25 • unnecessary_null_comparison
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:75:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:83:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:100:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:132:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:133:5 • avoid_print
+warning • The operand can't be 'null', so the condition is always 'true' • lib/data/datasources/syncfusion_pdf_service.dart:140:14 • unnecessary_null_comparison
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:142:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:151:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:167:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:171:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:175:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:190:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:196:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:202:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:208:15 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:215:15 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:227:15 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:229:15 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:264:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:283:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:332:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:335:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:338:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:347:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:386:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/data/datasources/syncfusion_pdf_service.dart:434:7 • avoid_print
+   info • 'Share' is deprecated and shouldn't be used. Use SharePlus instead • lib/data/repositories/pdf_repository_impl.dart:59:11 • deprecated_member_use
+   info • 'shareXFiles' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead • lib/data/repositories/pdf_repository_impl.dart:59:17 • deprecated_member_use
+   info • Parameter 'key' could be a super parameter • lib/presentation/dialogs/marker_selector_dialog.dart:9:9 • use_super_parameters
+   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/presentation/dialogs/marker_selector_dialog.dart:94:58 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/presentation/dialogs/marker_selector_dialog.dart:94:73 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/dialogs/marker_selector_dialog.dart:108:53 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/presentation/dialogs/marker_selector_dialog.dart:140:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/dialogs/marker_selector_dialog.dart:168:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/dialogs/marker_selector_dialog.dart:168:76 • deprecated_member_use
+   info • Parameter 'key' could be a super parameter • lib/presentation/dialogs/text_editor_dialog.dart:15:9 • use_super_parameters
+   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/presentation/dialogs/text_editor_dialog.dart:116:72 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:249:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:278:92 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:285:106 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:332:72 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:480:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:481:28 • deprecated_member_use
+  error • Undefined name 'context' • lib/presentation/pages/home_page.dart:546:65 • undefined_identifier
+  error • Undefined name 'context' • lib/presentation/pages/home_page.dart:549:67 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:590:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:591:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:595:61 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:602:48 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/presentation/pages/home_page.dart:620:28 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:683:27 • deprecated_member_use
+  error • Undefined name 'CustomToast' • lib/presentation/pages/home_page.dart:716:15 • undefined_identifier
+  error • Undefined name 'CustomToast' • lib/presentation/pages/home_page.dart:720:13 • undefined_identifier
+   info • Don't use 'BuildContext's across async gaps • lib/presentation/pages/home_page.dart:720:30 • use_build_context_synchronously
+  error • Undefined name 'CustomToast' • lib/presentation/pages/home_page.dart:727:11 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:736:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:746:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:757:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:757:92 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/presentation/pages/home_page.dart:776:26 • unnecessary_underscores
+   info • 'Share' is deprecated and shouldn't be used. Use SharePlus instead • lib/presentation/pages/home_page.dart:800:29 • deprecated_member_use
+   info • 'shareXFiles' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead • lib/presentation/pages/home_page.dart:800:35 • deprecated_member_use
+  error • Undefined name 'CustomToast' • lib/presentation/pages/home_page.dart:803:25 • undefined_identifier
+  error • Undefined name 'CustomToast' • lib/presentation/pages/home_page.dart:808:23 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/home_page.dart:823:64 • deprecated_member_use
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page.dart:150:31 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page.dart:151:33 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page.dart:155:35 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page.dart:159:35 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page.dart:163:35 • const_with_non_constant_argument
+warning • Dead code • lib/presentation/pages/pdf_editor_page.dart:199:54 • dead_code
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/pdf_editor_page.dart:413:68 • deprecated_member_use
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:64:30 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:77:34 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:81:34 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:99:34 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:123:29 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:184:86 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:185:89 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:329:29 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:330:31 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:334:33 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:367:83 • const_with_non_constant_argument
+  error • Arguments of a constant creation must be constant expressions • lib/presentation/pages/pdf_editor_page_actions.dart:373:33 • const_with_non_constant_argument
+   info • Don't invoke 'print' in production code • lib/presentation/providers/pdf_editor_provider.dart:363:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/presentation/providers/pdf_editor_provider.dart:369:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/presentation/providers/pdf_editor_provider.dart:377:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/presentation/providers/pdf_editor_provider.dart:379:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/presentation/providers/pdf_editor_provider.dart:382:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/presentation/providers/pdf_thumbnail_provider.dart:17:5 • avoid_print
+   info • Parameter 'key' could be a super parameter • lib/presentation/widgets/eraser_overlay.dart:11:9 • use_super_parameters
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/eraser_overlay.dart:44:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/eraser_overlay.dart:47:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/eraser_overlay.dart:68:51 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/presentation/widgets/ml_kit_bottom_bar.dart:37:13 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_editor_appbar.dart:32:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_editor_appbar.dart:33:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_editor_toolbar.dart:95:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_editor_toolbar.dart:96:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_editor_toolbar.dart:207:120 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_editor_toolbar.dart:234:120 • deprecated_member_use
+   info • Parameter 'key' could be a super parameter • lib/presentation/widgets/pdf_field_overlay.dart:17:9 • use_super_parameters
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_field_overlay.dart:96:113 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_field_overlay.dart:100:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_field_overlay.dart:102:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_field_overlay.dart:108:40 • deprecated_member_use
+   info • Use a 'SizedBox' to add whitespace to a layout • lib/presentation/widgets/pdf_field_overlay.dart:123:27 • sized_box_for_whitespace
+   info • Use a 'SizedBox' to add whitespace to a layout • lib/presentation/widgets/pdf_field_overlay.dart:128:27 • sized_box_for_whitespace
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_field_overlay.dart:152:61 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/pdf_field_overlay.dart:199:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/toolbar_button.dart:27:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/widgets/toolbar_button.dart:30:44 • deprecated_member_use
+
+118 issues found. (ran in 5.7s)

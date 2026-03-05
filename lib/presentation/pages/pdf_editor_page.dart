@@ -147,20 +147,20 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
         final result = await showDialog<String>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text(AppStrings.leaveEditorTitle),
-            content: const Text(AppStrings.leaveEditorBody),
+            title: Text(AppStrings.leaveEditorTitle),
+            content: Text(AppStrings.leaveEditorBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, 'cancel'),
-                child: const Text(AppStrings.stay),
+                child: Text(AppStrings.stay),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, 'draft'),
-                child: const Text(AppStrings.saveDraft),
+                child: Text(AppStrings.saveDraft),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, 'discard'),
-                child: const Text(AppStrings.discard, style: TextStyle(color: Colors.red)),
+                child: Text(AppStrings.discard, style: const TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -361,7 +361,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                                   isEraserMode: _activeMode == EditorMode.erase,
                                   onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
                                 );
-                              }).toList(),
+                              }),
 
                               // 4. Pending Eraser Preview
                               EraserOverlay(
@@ -441,14 +441,14 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
             ),
           );
         },
-        loading: () => const Scaffold(
-          backgroundColor: Color(0xFF0F0F1A),
-          body: Center(child: CircularProgressIndicator(color: Color(0xFF6C63FF))),
+        loading: () => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
         ),
         error: (err, stack) => Scaffold(
-          backgroundColor: const Color(0xFF0F0F1A),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Center(
-            child: Text('Error: $err', style: const TextStyle(color: Colors.redAccent)),
+            child: Text('Error: $err', style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ),
       ),

@@ -14,7 +14,10 @@ import '../../data/services/draft_service.dart';
 import '../../data/services/recent_files_service.dart';
 import '../providers/pdf_editor_provider.dart';
 import '../providers/pdf_thumbnail_provider.dart';
+import '../providers/app_theme_provider.dart';
+import '../providers/app_language_provider.dart';
 import '../widgets/custom_toast.dart';
+import '../../common/constants/app_strings.dart';
 import 'pdf_editor_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -143,6 +146,61 @@ class _HomePageState extends ConsumerState<HomePage> {
     _loadRecents();
   }
 
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          final themeMode = ref.watch(themeProvider);
+          final locale = ref.watch(languageProvider);
+
+          return AlertDialog(
+            title: Text(locale.languageCode == 'id' ? 'Pengaturan' : 'Settings'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: Text(locale.languageCode == 'id' ? 'Tema' : 'Theme'),
+                  subtitle: Text(themeMode == ThemeMode.dark 
+                    ? (locale.languageCode == 'id' ? 'Gelap' : 'Dark')
+                    : (locale.languageCode == 'id' ? 'Terang' : 'Light')),
+                  trailing: Switch(
+                    value: themeMode == ThemeMode.dark,
+                    onChanged: (_) => ref.read(themeProvider.notifier).toggleTheme(),
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  title: Text(locale.languageCode == 'id' ? 'Bahasa' : 'Language'),
+                  subtitle: Text(locale.languageCode == 'id' ? 'Bahasa Indonesia' : 'English'),
+                  trailing: DropdownButton<String>(
+                    value: locale.languageCode,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: 'id', child: Text('🇮🇩 Indo')),
+                      DropdownMenuItem(value: 'en', child: Text('🇺🇸 English')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        ref.read(languageProvider.notifier).setLanguage(val);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppStrings.ok),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. Primary Filter (Global Search)
@@ -161,11 +219,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     final latestDraft = _recentFiles.where((f) => f.hasDraft).firstOrNull;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0F0F1A), Color(0xFF16162A)],
+            colors: Theme.of(context).brightness == Brightness.dark 
+              ? [const Color(0xFF0F0F1A), const Color(0xFF16162A)]
+              : [const Color(0xFFF0F2F9), const Color(0xFFF8F9FE)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -178,12 +238,17 @@ class _HomePageState extends ConsumerState<HomePage> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF1E1E2E), Color(0xFF252540)],
+                    colors: Theme.of(context).brightness == Brightness.dark
+                      ? [const Color(0xFF1E1E2E), const Color(0xFF252540)]
+                      : [const Color(0xFFFFFFFF), const Color(0xFFF0F2F9)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
+                  boxShadow: Theme.of(context).brightness == Brightness.light
+                    ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))]
+                    : null,
                 ),
                 child: Row(
                   children: [
@@ -202,19 +267,24 @@ class _HomePageState extends ConsumerState<HomePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('PDF Expert',
+                          Text(AppStrings.appName,
                             style: GoogleFonts.inter(
                               fontSize: 22, fontWeight: FontWeight.w800,
-                              color: Colors.white, letterSpacing: -0.5,
+                              color: Theme.of(context).colorScheme.onSurface, 
+                              letterSpacing: -0.5,
                             ),
                           ),
-                          Text('Edit, annotate & sign your PDFs',
+                          Text(AppStrings.appName == 'PDF Expert' ? 'Edit, annotate & sign your PDFs' : 'Edit, beri anotasi & tanda tangani PDF Anda',
                             style: GoogleFonts.inter(
-                              fontSize: 12, color: const Color(0xFF8888AA),
+                              fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                      onPressed: () => _showSettingsDialog(),
                     ),
                   ],
                 ),
@@ -407,8 +477,10 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
     return Container(
       // Soft blur background when scrolling past
       decoration: BoxDecoration(
-        color: const Color(0xFF0F0F1A).withValues(alpha: 0.95),
-        border: overlapsContent ? const Border(bottom: BorderSide(color: Color(0xFF2E2E4A), width: 1)) : null,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? const Color(0xFF0F0F1A).withOpacity(0.95)
+            : Colors.white.withOpacity(0.95),
+        border: overlapsContent ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1)) : null,
       ),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -417,9 +489,13 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
           // Search Bar
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E2E),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E1E2E)
+                  : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2E2E4A)),
+              border: Border.all(color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF2E2E4A)
+                  : Colors.grey.shade300),
             ),
             child: TextField(
               controller: searchController,
@@ -427,8 +503,11 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
               onChanged: onSearchChanged,
               style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Search files...',
-                hintStyle: GoogleFonts.inter(color: const Color(0xFF66667A)),
+                hintText: AppStrings.searchHint,
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF8888AA) : Colors.black38,
+                ),
                 prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF66667A), size: 20),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -447,11 +526,11 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildTabButtonWrapper(0, 'All'),
+                _buildTabButtonWrapper(context, 0, AppStrings.tabAll),
                 const SizedBox(width: 8),
-                _buildTabButtonWrapper(1, 'Originals'),
+                _buildTabButtonWrapper(context, 1, AppStrings.tabRecent),
                 const SizedBox(width: 8),
-                _buildTabButtonWrapper(2, 'Edited by Me'),
+                _buildTabButtonWrapper(context, 2, AppStrings.tabDrafts),
               ],
             ),
           ),
@@ -460,7 +539,7 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _buildTabButtonWrapper(int index, String title) {
+  Widget _buildTabButtonWrapper(BuildContext context, int index, String title) {
     final bool isActive = activeTab == index;
     return GestureDetector(
       onTap: () => onTabChanged(index),
@@ -468,10 +547,10 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF6C63FF) : const Color(0xFF1E1E2E),
+          color: isActive ? const Color(0xFF6C63FF) : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E2E) : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? const Color(0xFF8B80FF) : const Color(0xFF2E2E4A),
+            color: isActive ? const Color(0xFF8B80FF) : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2E2E4A) : Colors.grey.shade300),
           ),
         ),
         child: Text(
@@ -657,9 +736,19 @@ class _RecentFileTile extends ConsumerWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E2E).withOpacity(0.5),
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? const Color(0xFF1E1E2E).withOpacity(0.5)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2E2E4A), width: 0.5),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF2E2E4A) 
+                : Colors.grey.shade200, 
+            width: 1,
+          ),
+          boxShadow: Theme.of(context).brightness == Brightness.light
+              ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]
+              : null,
         ),
         child: ListTile(
           onTap: onTap,
@@ -694,7 +783,11 @@ class _RecentFileTile extends ConsumerWidget {
           title: Text(entry.fileName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+            style: GoogleFonts.inter(
+              fontSize: 14, 
+              fontWeight: FontWeight.w600, 
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
+            ),
           ),
           subtitle: Text(_formatDate(entry.lastOpened),
             style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8888AA)),

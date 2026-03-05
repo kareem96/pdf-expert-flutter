@@ -91,9 +91,16 @@ class _PdfEditorToolbarState extends State<PdfEditorToolbar> {
           child: Container(
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFF252540).withOpacity(0.6),
-              border: const Border(
-                top: BorderSide(color: Color(0xFF3E3E5A), width: 0.5),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF252540).withOpacity(0.6)
+                  : Colors.white.withOpacity(0.8),
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF3E3E5A)
+                      : Colors.grey.shade200,
+                  width: 0.5,
+                ),
               ),
             ),
             child: Stack(
@@ -196,12 +203,16 @@ class _PdfEditorToolbarState extends State<PdfEditorToolbar> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
-                            const Color(0xFF252540),
-                            const Color(0xFF252540).withOpacity(0),
+                            Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white,
+                            (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white).withOpacity(0),
                           ],
                         ),
                       ),
-                      child: const Icon(Icons.chevron_left_rounded, color: Colors.white38, size: 20),
+                      child: Icon(
+                        Icons.chevron_left_rounded, 
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Colors.black26, 
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -219,12 +230,16 @@ class _PdfEditorToolbarState extends State<PdfEditorToolbar> {
                           begin: Alignment.centerRight,
                           end: Alignment.centerLeft,
                           colors: [
-                            const Color(0xFF252540),
-                            const Color(0xFF252540).withOpacity(0),
+                            Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white,
+                            (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white).withOpacity(0),
                           ],
                         ),
                       ),
-                      child: const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 20),
+                      child: Icon(
+                        Icons.chevron_right_rounded, 
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Colors.black26, 
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
