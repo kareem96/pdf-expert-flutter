@@ -7,6 +7,13 @@ final languageProvider = StateNotifierProvider<LanguageNotifier, Locale>((ref) {
   return LanguageNotifier();
 });
 
+/// Provider ini memaksa seluruh widget yang menontonnya untuk rebuild
+/// saat bahasa diganti, karena ia depend pada [languageProvider].
+final appStringsProvider = Provider<AppStrings>((ref) {
+  ref.watch(languageProvider);
+  return AppStrings();
+});
+
 class LanguageNotifier extends StateNotifier<Locale> {
   final _prefs = AppPreferencesService();
 

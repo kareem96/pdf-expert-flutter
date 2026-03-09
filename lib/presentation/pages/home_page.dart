@@ -34,7 +34,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   List<RecentFileEntry> _recentFiles = [];
   bool _loading = true;
   bool _isOpening = false;
-  int _activeTab = 0; // 0: All, 1: Originals, 2: Edited
+  int _activeTab = 0;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -52,7 +52,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Future<void> _loadRecents() async {
     final files = await _recentService.getRecentFiles();
-    // Filter out files that no longer exist on disk
     final valid = <RecentFileEntry>[];
     for (final f in files) {
       if (await File(f.filePath).exists()) {
@@ -71,15 +70,14 @@ class _HomePageState extends ConsumerState<HomePage> {
       allowedExtensions: ['pdf'],
     );
     if (result != null && result.files.single.path != null) {
-      final path = result.files.single.path!;
-      await _openFile(path);
+      await _openFile(result.files.single.path!);
     }
   }
 
   Future<void> _openFile(String path, {bool restoreDraft = false}) async {
     if (_isOpening) return;
     setState(() => _isOpening = true);
-    
+
     try {
       await _recentService.recordFileOpened(path);
       if (!mounted) return;
@@ -111,18 +109,16 @@ class _HomePageState extends ConsumerState<HomePage> {
       final choice = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Resume Editing?'),
-          content: Text(
-            '"${entry.fileName}" has unsaved draft edits.\nWould you like to continue editing or open fresh?',
-          ),
+          title: Text(AppStrings.resumeEditing),
+          content: Text(AppStrings.resumeEditingBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, 'fresh'),
-              child: const Text('Open Fresh'),
+              child: Text(AppStrings.openFresh),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, 'resume'),
-              child: const Text('Resume Draft'),
+              child: Text(AppStrings.resumeDraft),
             ),
           ],
         ),
@@ -152,18 +148,17 @@ class _HomePageState extends ConsumerState<HomePage> {
       builder: (context) => Consumer(
         builder: (context, ref, child) {
           final themeMode = ref.watch(themeProvider);
-          final locale = ref.watch(languageProvider);
+          // Watch language provider inside dialog agar ikut rebuild
+          ref.watch(appStringsProvider);
 
           return AlertDialog(
-            title: Text(locale.languageCode == 'id' ? 'Pengaturan' : 'Settings'),
+            title: Text(AppStrings.settings),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  title: Text(locale.languageCode == 'id' ? 'Tema' : 'Theme'),
-                  subtitle: Text(themeMode == ThemeMode.dark 
-                    ? (locale.languageCode == 'id' ? 'Gelap' : 'Dark')
-                    : (locale.languageCode == 'id' ? 'Terang' : 'Light')),
+                  title: Text(AppStrings.theme),
+                  subtitle: Text(themeMode == ThemeMode.dark ? AppStrings.themeDark : AppStrings.themeLight),
                   trailing: Switch(
                     value: themeMode == ThemeMode.dark,
                     onChanged: (_) => ref.read(themeProvider.notifier).toggleTheme(),
@@ -171,10 +166,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
                 const Divider(),
                 ListTile(
-                  title: Text(locale.languageCode == 'id' ? 'Bahasa' : 'Language'),
-                  subtitle: Text(locale.languageCode == 'id' ? 'Bahasa Indonesia' : 'English'),
+                  title: Text(AppStrings.language),
+                  subtitle: Text(AppStrings.currentLanguage == 'id' ? 'Bahasa Indonesia' : 'English'),
                   trailing: DropdownButton<String>(
-                    value: locale.languageCode,
+                    value: AppStrings.currentLanguage,
                     underline: const SizedBox(),
                     items: const [
                       DropdownMenuItem(value: 'id', child: Text('🇮🇩 Indo')),
@@ -203,13 +198,14 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Primary Filter (Global Search)
+    // Watch appStringsProvider agar seluruh HomePage rebuild saat bahasa berubah
+    ref.watch(appStringsProvider);
+
     final searchedFiles = _recentFiles.where((f) {
       if (_searchQuery.isEmpty) return true;
       return f.fileName.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
-    // 2. Secondary Filter (Tab Category)
     final filteredFiles = searchedFiles.where((f) {
       if (_activeTab == 1) return !f.isEdited;
       if (_activeTab == 2) return f.isEdited;
@@ -223,7 +219,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: Theme.of(context).brightness == Brightness.dark 
+            colors: Theme.of(context).brightness == Brightness.dark
               ? [const Color(0xFF0F0F1A), const Color(0xFF16162A)]
               : [const Color(0xFFF0F2F9), const Color(0xFFF8F9FE)],
             begin: Alignment.topCenter,
@@ -234,7 +230,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ─────────────────────────────────────────────────────
+              // ── Header ──────────────────────────────────────────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
@@ -270,11 +266,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                           Text(AppStrings.appName,
                             style: GoogleFonts.inter(
                               fontSize: 22, fontWeight: FontWeight.w800,
-                              color: Theme.of(context).colorScheme.onSurface, 
+                              color: Theme.of(context).colorScheme.onSurface,
                               letterSpacing: -0.5,
                             ),
                           ),
-                          Text(AppStrings.appName == 'PDF Expert' ? 'Edit, annotate & sign your PDFs' : 'Edit, beri anotasi & tanda tangani PDF Anda',
+                          Text(AppStrings.appSubtitle,
                             style: GoogleFonts.inter(
                               fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
@@ -284,7 +280,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
-                      onPressed: () => _showSettingsDialog(),
+                      onPressed: _showSettingsDialog,
                     ),
                   ],
                 ),
@@ -299,7 +295,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             const CircularProgressIndicator(color: Color(0xFF6C63FF)),
                             if (_isOpening) ...[
                               const SizedBox(height: 16),
-                              Text('Preparing Document...', 
+                              Text(AppStrings.preparingDocument,
                                 style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
                             ]
                           ],
@@ -341,7 +337,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     children: [
                                       const Icon(Icons.add_rounded, color: Colors.white, size: 20),
                                       const SizedBox(width: 10),
-                                      Text('Open New PDF',
+                                      Text(AppStrings.openNewPdf,
                                         style: GoogleFonts.inter(
                                           fontSize: 15, fontWeight: FontWeight.w600,
                                           color: Colors.white,
@@ -354,7 +350,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          // ── Sticky Header (Search & Tabs) ───────────────────────
+                          // ── Sticky Header (Search & Tabs) ──────────────────
                           if (_recentFiles.isNotEmpty)
                             SliverPersistentHeader(
                               pinned: true,
@@ -393,23 +389,20 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          // ── Empty recent ─────────────────────────────────
+                          // ── Empty states ─────────────────────────────────
                           if (_recentFiles.isNotEmpty && filteredFiles.isEmpty) SliverToBoxAdapter(
                             child: Center(
                               child: Padding(
                                 padding: const EdgeInsets.only(top: 60),
                                 child: Column(
                                   children: [
-                                    const Icon(Icons.search_off_rounded,
-                                        size: 48, color: Color(0xFF44445A)),
+                                    const Icon(Icons.search_off_rounded, size: 48, color: Color(0xFF44445A)),
                                     const SizedBox(height: 12),
                                     Text(
-                                      _searchQuery.isNotEmpty 
-                                          ? 'No matches found in this tab' 
-                                          : 'No files in this category',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14, color: const Color(0xFF66667A),
-                                      ),
+                                      _searchQuery.isNotEmpty
+                                          ? AppStrings.noMatchesInTab
+                                          : AppStrings.noFilesInCategory,
+                                      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF66667A)),
                                     ),
                                   ],
                                 ),
@@ -422,13 +415,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 padding: const EdgeInsets.only(top: 60),
                                 child: Column(
                                   children: [
-                                    const Icon(Icons.folder_open_outlined,
-                                      size: 56, color: Color(0xFF44445A)),
+                                    const Icon(Icons.folder_open_outlined, size: 56, color: Color(0xFF44445A)),
                                     const SizedBox(height: 12),
-                                    Text('No recent files',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14, color: const Color(0xFF66667A),
-                                      ),
+                                    Text(AppStrings.noRecentFiles,
+                                      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF66667A)),
                                     ),
                                   ],
                                 ),
@@ -446,9 +436,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
-
 }
 
+// ── Sticky Header Delegate ─────────────────────────────────────────────────────
 class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TextEditingController searchController;
   final String searchQuery;
@@ -467,79 +457,88 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  double get minExtent => 135.0; // Min Height of Sticky box
+  double get minExtent => 135.0;
 
   @override
   double get maxExtent => 135.0;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      // Soft blur background when scrolling past
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? const Color(0xFF0F0F1A).withOpacity(0.95)
-            : Colors.white.withOpacity(0.95),
-        border: overlapsContent ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1)) : null,
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Search Bar
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF1E1E2E)
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF2E2E4A)
-                  : Colors.grey.shade300),
-            ),
-            child: TextField(
-              controller: searchController,
-              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-              onChanged: onSearchChanged,
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: AppStrings.searchHint,
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF8888AA) : Colors.black38,
+    // Wrap in Consumer agar string di header ikut rebuild saat bahasa berubah
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.watch(appStringsProvider);
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF0F0F1A).withOpacity(0.95)
+                : Colors.white.withOpacity(0.95),
+            border: overlapsContent
+                ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1))
+                : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF1E1E2E)
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF2E2E4A)
+                        : Colors.grey.shade300,
+                  ),
                 ),
-                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF66667A), size: 20),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                suffixIcon: searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Color(0xFF8888AA), size: 18),
-                        onPressed: onSearchCleared,
-                      )
-                    : null,
+                child: TextField(
+                  controller: searchController,
+                  onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                  onChanged: onSearchChanged,
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: AppStrings.searchHint,
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF8888AA)
+                          : Colors.black38,
+                    ),
+                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF66667A), size: 20),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    suffixIcon: searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Color(0xFF8888AA), size: 18),
+                            onPressed: onSearchCleared,
+                          )
+                        : null,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildTabButton(context, 0, AppStrings.tabAll),
+                    const SizedBox(width: 8),
+                    _buildTabButton(context, 1, AppStrings.tabRecent),
+                    const SizedBox(width: 8),
+                    _buildTabButton(context, 2, AppStrings.tabDrafts),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          // Tabs Horizontal
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildTabButtonWrapper(context, 0, AppStrings.tabAll),
-                const SizedBox(width: 8),
-                _buildTabButtonWrapper(context, 1, AppStrings.tabRecent),
-                const SizedBox(width: 8),
-                _buildTabButtonWrapper(context, 2, AppStrings.tabDrafts),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildTabButtonWrapper(BuildContext context, int index, String title) {
+  Widget _buildTabButton(BuildContext context, int index, String title) {
     final bool isActive = activeTab == index;
     return GestureDetector(
       onTap: () => onTabChanged(index),
@@ -547,10 +546,14 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF6C63FF) : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E2E) : Colors.grey.shade100),
+          color: isActive
+              ? const Color(0xFF6C63FF)
+              : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E2E) : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? const Color(0xFF8B80FF) : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2E2E4A) : Colors.grey.shade300),
+            color: isActive
+                ? const Color(0xFF8B80FF)
+                : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2E2E4A) : Colors.grey.shade300),
           ),
         ),
         child: Text(
@@ -581,6 +584,7 @@ class _ContinueBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appStringsProvider);
     final thumbAsync = ref.watch(pdfThumbnailProvider(entry.filePath));
 
     return GestureDetector(
@@ -608,16 +612,12 @@ class _ContinueBanner extends ConsumerWidget {
               ),
               clipBehavior: Clip.hardEdge,
               child: thumbAsync.when(
-                data: (data) => data != null 
+                data: (data) => data != null
                     ? Container(
                         color: Colors.white,
                         width: double.infinity,
                         height: double.infinity,
-                        child: Image.memory(
-                          data, 
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                        ),
+                        child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter),
                       )
                     : const Icon(Icons.edit_note_rounded, color: Color(0xFF6C63FF), size: 20),
                 loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6C63FF))),
@@ -629,17 +629,13 @@ class _ContinueBanner extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Continue Editing',
-                    style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white,
-                    ),
+                  Text(AppStrings.continueEditing,
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                   Text(entry.fileName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 11, color: const Color(0xFF8888AA),
-                    ),
+                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8888AA)),
                   ),
                 ],
               ),
@@ -676,6 +672,7 @@ class _RecentFileTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appStringsProvider);
     final thumbAsync = ref.watch(pdfThumbnailProvider(entry.filePath));
 
     return Dismissible(
@@ -693,18 +690,18 @@ class _RecentFileTile extends ConsumerWidget {
         final action = await showDialog<String>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Remove File?'),
-            content: Text('What would you like to do with "${entry.fileName}"?\n\nThis will also clear any saved draft states.'),
+            title: Text(AppStrings.removeFile),
+            content: Text(AppStrings.removeFileBody(entry.fileName)),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, 'cancel'), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx, 'cancel'), child: Text(AppStrings.cancel)),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, 'history'),
-                child: const Text('Remove from History'),
+                child: Text(AppStrings.removeFromHistory),
               ),
-              if (entry.isEdited) // Only allow physical deletion for exported files natively
+              if (entry.isEdited)
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, 'delete'),
-                  child: const Text('Delete File from Device', style: TextStyle(color: Colors.red)),
+                  child: Text(AppStrings.deleteFromDevice, style: const TextStyle(color: Colors.red)),
                 ),
             ],
           ),
@@ -713,22 +710,22 @@ class _RecentFileTile extends ConsumerWidget {
         if (action == 'delete') {
           try {
             final file = File(entry.filePath);
-            if (await file.exists()) {
-              await file.delete();
-            }
+            if (await file.exists()) await file.delete();
             if (context.mounted) {
-              CustomToast.show(context, message: 'File deleted from device');
+              CustomToast.show(context, message: AppStrings.fileDeleted);
             }
             return true;
           } catch (e) {
-            CustomToast.show(context, message: 'Could not delete file: $e', isError: true);
+            if (context.mounted) {
+              CustomToast.show(context, message: AppStrings.couldNotDeleteFile + e.toString(), isError: true);
+            }
             return false;
           }
         }
-        
+
         final isHistory = (action == 'history');
         if (isHistory && context.mounted) {
-          CustomToast.show(context, message: 'Removed from history');
+          CustomToast.show(context, message: AppStrings.removedFromHistory);
         }
         return isHistory;
       },
@@ -736,14 +733,14 @@ class _RecentFileTile extends ConsumerWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark 
+          color: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF1E1E2E).withOpacity(0.5)
               : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? const Color(0xFF2E2E4A) 
-                : Colors.grey.shade200, 
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF2E2E4A)
+                : Colors.grey.shade200,
             width: 1,
           ),
           boxShadow: Theme.of(context).brightness == Brightness.light
@@ -764,16 +761,12 @@ class _RecentFileTile extends ConsumerWidget {
             ),
             clipBehavior: Clip.hardEdge,
             child: thumbAsync.when(
-              data: (data) => data != null 
+              data: (data) => data != null
                   ? Container(
                       color: Colors.white,
                       width: double.infinity,
                       height: double.infinity,
-                      child: Image.memory(
-                        data, 
-                        fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
-                      ),
+                      child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter),
                     )
                   : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
               loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B80FF))),
@@ -784,8 +777,8 @@ class _RecentFileTile extends ConsumerWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 14, 
-              fontWeight: FontWeight.w600, 
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
               color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
             ),
           ),
@@ -819,19 +812,12 @@ class _RecentFileTile extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6C63FF), Color(0xFF9B59B6)],
-                    ),
+                    gradient: const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF9B59B6)]),
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.3), blurRadius: 4),
-                    ],
+                    boxShadow: [BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.3), blurRadius: 4)],
                   ),
                   child: Text('Draft',
-                    style: GoogleFonts.inter(
-                      fontSize: 10, fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                 )
               else

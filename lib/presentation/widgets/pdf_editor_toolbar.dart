@@ -1,14 +1,13 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../common/constants/app_strings.dart';
+import '../providers/app_language_provider.dart';
 import '../widgets/toolbar_button.dart';
 import '../widgets/custom_toast.dart';
-// Note: We need a way to pass EditorMode, so we will expect the parent to define it 
-// or import it if it's extracted. Since EditorMode is in pdf_editor_page.dart, 
-// it's better to extract the enum or just import it.
 import '../pages/pdf_editor_page.dart' show EditorMode;
 
-class PdfEditorToolbar extends StatefulWidget {
+class PdfEditorToolbar extends ConsumerStatefulWidget {
   final EditorMode activeMode;
   final ValueChanged<EditorMode> onModeChanged;
   final VoidCallback onAddSignature;
@@ -33,10 +32,10 @@ class PdfEditorToolbar extends StatefulWidget {
   });
 
   @override
-  State<PdfEditorToolbar> createState() => _PdfEditorToolbarState();
+  ConsumerState<PdfEditorToolbar> createState() => _PdfEditorToolbarState();
 }
 
-class _PdfEditorToolbarState extends State<PdfEditorToolbar> {
+class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
   final ScrollController _toolbarScrollController = ScrollController();
   bool _showLeftIndicator = false;
   bool _showRightIndicator = true;
@@ -83,6 +82,7 @@ class _PdfEditorToolbarState extends State<PdfEditorToolbar> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appStringsProvider);
     return PreferredSize(
       preferredSize: const Size.fromHeight(80),
       child: ClipRect(

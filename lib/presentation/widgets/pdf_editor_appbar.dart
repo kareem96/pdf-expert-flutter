@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../common/constants/app_strings.dart';
+import '../providers/app_language_provider.dart';
 import '../providers/pdf_editor_provider.dart';
 
 class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -20,6 +21,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appStringsProvider);
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
