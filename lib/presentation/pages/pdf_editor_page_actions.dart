@@ -290,21 +290,28 @@ extension _PdfEditorActions on _PdfEditorPageState {
   }
 
   void _onEraseText(Offset position, int pageIndex, double currentZoom) async {
-    if (_useMlKit) {
-      CustomToast.show(context, message: AppStrings.mlKitNotImplemented);
-      return;
-    }
-
     final docState = ref.read(pdfEditorProvider);
     if (docState.value == null) return;
 
     final doc = docState.value!;
     final repo = ref.read(pdfRepositoryProvider);
 
-    CustomToast.show(context, message: AppStrings.toastExtractingBounds);
+    // Provide visual feedback base on which engine is used
+    if (_useMlKit) {
+      CustomToast.show(context, message: AppStrings.toastExtractingBounds);
+    }
 
     final double dynamicHitPad = 6.0 / currentZoom;
-    final Rect? bounds = await repo.extractWordBounds(doc.filePath, pageIndex, position.dx, position.dy, pad: dynamicHitPad);
+    
+    // Process extraction (will handle AI Scan inside Repository if _useMlKit is true)
+    final Rect? bounds = await repo.extractWordBounds(
+      doc.filePath, 
+      pageIndex, 
+      position.dx, 
+      position.dy, 
+      pad: dynamicHitPad,
+      useAiScan: _useMlKit, // Pass the toggle value!
+    );
 
     if (bounds != null) {
       _update(() {

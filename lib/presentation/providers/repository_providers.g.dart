@@ -23,7 +23,24 @@ final pdfServiceProvider = AutoDisposeProvider<SyncfusionPdfService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PdfServiceRef = AutoDisposeProviderRef<SyncfusionPdfService>;
-String _$pdfRepositoryHash() => r'816e8f9885c75b286f3d5b9616b260dcd929ca50';
+String _$mlKitOcrServiceHash() => r'b2c31a5b455f7dfb2ac2b9cf23edbd0d474cdcd5';
+
+/// See also [mlKitOcrService].
+@ProviderFor(mlKitOcrService)
+final mlKitOcrServiceProvider = AutoDisposeProvider<MlKitOcrService>.internal(
+  mlKitOcrService,
+  name: r'mlKitOcrServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$mlKitOcrServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef MlKitOcrServiceRef = AutoDisposeProviderRef<MlKitOcrService>;
+String _$pdfRepositoryHash() => r'9bf825145bc51712fab37d53228875e3643345fc';
 
 /// See also [pdfRepository].
 @ProviderFor(pdfRepository)

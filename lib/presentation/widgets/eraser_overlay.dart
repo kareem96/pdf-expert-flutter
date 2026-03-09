@@ -61,7 +61,7 @@ class EraserOverlay extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E2E),
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.red.shade400, width: 1.5),
                   boxShadow: [
@@ -71,10 +71,10 @@ class EraserOverlay extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Erase this?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text('Erase this?', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 13)),
                     const SizedBox(width: 12),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white70, size: 18),
+                      icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), size: 18),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: onCancel,

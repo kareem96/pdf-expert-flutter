@@ -183,8 +183,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
       child: pdfState.when(
         data: (doc) {
           if (doc == null) {
-            return const Scaffold(
-              backgroundColor: Color(0xFF0F0F1A),
+            return Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               body: Center(child: Text('Document not found', style: TextStyle(color: Colors.white))),
             );
           }
@@ -193,7 +193,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           const isEditing = true;
 
           return Scaffold(
-            backgroundColor: const Color(0xFF0F0F1A),
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(
                 kToolbarHeight + (isEditing ? 80.0 : 0.0)

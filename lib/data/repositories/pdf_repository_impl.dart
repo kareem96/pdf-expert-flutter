@@ -2,14 +2,17 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/repositories/i_pdf_repository.dart';
 import '../datasources/syncfusion_pdf_service.dart';
+import '../datasources/ml_kit_ocr_service.dart';
 
 class PdfRepositoryImpl implements IPdfRepository {
   final SyncfusionPdfService pdfService;
+  final MlKitOcrService mlKitOcrService;
 
-  PdfRepositoryImpl(this.pdfService);
+  PdfRepositoryImpl(this.pdfService, this.mlKitOcrService);
 
   @override
   Future<PdfDocumentEntity> loadPdf(String path) {
@@ -17,7 +20,28 @@ class PdfRepositoryImpl implements IPdfRepository {
   }
 
   @override
-  Future<Rect?> extractWordBounds(String path, int pageIndex, double x, double y, {double pad = 10.0}) {
+  Future<Rect?> extractWordBounds(
+    String path, 
+    int pageIndex, 
+    double x, 
+    double y, {
+    double pad = 10.0,
+    bool useAiScan = false,
+  }) async {
+    if (kDebugMode) {
+      print('PdfRepository: Extracting bounds at ($x, $y). AI Scan Mode: $useAiScan');
+    }
+    
+    // 1. Jika mode "AI Scan" aktif, prioritas menggunakan ML Kit OCR dahulu
+    if (useAiScan) {
+      final rect = await mlKitOcrService.extractWordBoundsFromImage(path, pageIndex, x, y, pad: pad);
+      if (rect != null) return rect;
+      
+      // Jika AI Scan gagal, _fall-back_ ke Syncfusion (sebagai safety-net)
+      if (kDebugMode) print('PdfRepository: AI Scan yielded null, falling back to Syncfusion.');
+    }
+    
+    // 2. Default: Menggunakan TextExtractor bawaan Syncfusion Cepat 
     return pdfService.extractWordBoundsAt(path, pageIndex, x, y, pad: pad);
   }
 

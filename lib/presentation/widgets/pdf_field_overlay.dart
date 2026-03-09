@@ -93,7 +93,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
               decoration: BoxDecoration(
                 color: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
                     ? Colors.transparent 
-                    : (isEraser ? Color(int.parse(widget.field.backgroundColor ?? '0xFFFFFFFF')) : Colors.white.withOpacity(0.05)),
+                    : (isEraser ? Color(int.parse(widget.field.backgroundColor ?? '0xFFFFFFFF')) : Theme.of(context).colorScheme.onSurface.withOpacity(0.05)),
                 border: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
                     ? null
                     : isEraser 
@@ -192,7 +192,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.blue, width: 2),
                       boxShadow: [

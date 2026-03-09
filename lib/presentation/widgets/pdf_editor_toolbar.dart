@@ -91,9 +91,7 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
           child: Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF252540).withOpacity(0.6)
-                  : Colors.white.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.8),
               border: Border(
                 top: BorderSide(
                   color: Theme.of(context).brightness == Brightness.dark

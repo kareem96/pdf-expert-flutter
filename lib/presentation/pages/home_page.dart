@@ -497,7 +497,7 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
                   controller: searchController,
                   onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                   onChanged: onSearchChanged,
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                  style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: AppStrings.searchHint,
                     hintStyle: GoogleFonts.inter(
@@ -609,6 +609,10 @@ class _ContinueBanner extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF6C63FF).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                  width: 1,
+                ),
               ),
               clipBehavior: Clip.hardEdge,
               child: thumbAsync.when(
@@ -758,6 +762,10 @@ class _RecentFileTile extends ConsumerWidget {
                 colors: [const Color(0xFF6C63FF).withOpacity(0.2), const Color(0xFF9B59B6).withOpacity(0.2)],
               ),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                width: 1,
+              ),
             ),
             clipBehavior: Clip.hardEdge,
             child: thumbAsync.when(

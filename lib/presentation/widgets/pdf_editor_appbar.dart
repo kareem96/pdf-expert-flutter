@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../common/constants/app_strings.dart';
@@ -25,19 +26,19 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarBrightness: Theme.of(context).brightness,
+        statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+      ),
       flexibleSpace: ClipRect(
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF1E1E2E).withOpacity(0.7)
-                  : Colors.white.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
               border: Border(
                 bottom: BorderSide(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? const Color(0xFF3E3E5A)
-                      : Colors.grey.shade200,
+                  color: Theme.of(context).dividerColor,
                   width: 0.5,
                 ),
               ),
@@ -49,7 +50,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
         icon: Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 20,
-          color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
@@ -77,7 +78,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -89,7 +90,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF8888BB) : Colors.black54,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
               ],
@@ -103,8 +104,8 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
             Icons.undo_rounded,
             size: 20,
             color: ref.watch(pdfEditorProvider.notifier).canUndo 
-                ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87)
-                : (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.grey.shade300),
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
           ),
           onPressed: ref.watch(pdfEditorProvider.notifier).canUndo 
               ? () => ref.read(pdfEditorProvider.notifier).undo() 
@@ -115,8 +116,8 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
             Icons.redo_rounded,
             size: 20,
             color: ref.watch(pdfEditorProvider.notifier).canRedo 
-                ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87)
-                : (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.grey.shade300),
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
           ),
           onPressed: ref.watch(pdfEditorProvider.notifier).canRedo 
               ? () => ref.read(pdfEditorProvider.notifier).redo() 

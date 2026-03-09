@@ -39,7 +39,7 @@ class ToolbarButton extends StatelessWidget {
               size: 20, 
               color: isActive 
                 ? Colors.amber 
-                : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black54)
+                : Theme.of(context).colorScheme.onSurface,
             ),
             const SizedBox(height: 4),
             Text(
@@ -48,7 +48,7 @@ class ToolbarButton extends StatelessWidget {
                 fontSize: 10, 
                 color: isActive 
                     ? Colors.amber 
-                    : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black45),
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
           ],
