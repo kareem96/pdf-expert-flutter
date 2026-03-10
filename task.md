@@ -44,5 +44,19 @@
 ### [ ] 2.5 Global Watermark Injector
 - High-speed engine to inject confidential overlays across all pages simultaneously.
 
+### [ ] 2.6 Offline AI Model (Build Flavors)
+- Create APK build variants (standard vs offline) to bundle the 15MB ML Kit Text Recognition model for 100% offline usage without initial Play Services download.
+
+### [ ] 2.7 Magic Edit (Smart Edit Illusion)
+- Premium feature mimic Adobe/Foxit's "True Text Editing".
+- Utilizes Surgical Eraser combined with auto-sizing Text Overlay initialized with extracted text.
+- Provides a seamless optical illusion of editing original PDF text.
+
+### [/] 2.8 AI Tools UI Overhaul & Smart Popup
+- Separate AI Scan from the standard Eraser tool.
+- Create a dedicated "AI Scan" icon in the main toolbar.
+- Implement a "Smart Popup" to enforce ML Kit model download via `ModelManager` check before use.
+
 ---
 *Note: This file is the single source of truth for all project progress and future planning.*
+> **ATURAN WAJIB**: Jangan mencentang `[x]` untuk status fitur yang sedang atau baru dikerjakan sampai User (Pengguna) secara eksplisit menyatakan hasil fitur tersebut "sudah sempurna/selesai". Gunakan `[/]` (in progress) untuk fitur yang sedang digarap.

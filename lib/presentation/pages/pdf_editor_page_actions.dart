@@ -289,7 +289,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
     }
   }
 
-  void _onEraseText(Offset position, int pageIndex, double currentZoom) async {
+  void _onEraseText(Offset position, int pageIndex, double currentZoom, {required bool isAiScan}) async {
     final docState = ref.read(pdfEditorProvider);
     if (docState.value == null) return;
 
@@ -297,20 +297,20 @@ extension _PdfEditorActions on _PdfEditorPageState {
     final repo = ref.read(pdfRepositoryProvider);
 
     // Provide visual feedback base on which engine is used
-    if (_useMlKit) {
+    if (isAiScan) {
       CustomToast.show(context, message: AppStrings.toastExtractingBounds);
     }
 
     final double dynamicHitPad = 6.0 / currentZoom;
     
-    // Process extraction (will handle AI Scan inside Repository if _useMlKit is true)
+    // Process extraction 
     final Rect? bounds = await repo.extractWordBounds(
       doc.filePath, 
       pageIndex, 
       position.dx, 
       position.dy, 
       pad: dynamicHitPad,
-      useAiScan: _useMlKit, // Pass the toggle value!
+      useAiScan: isAiScan,
     );
 
     if (bounds != null) {
@@ -330,19 +330,25 @@ extension _PdfEditorActions on _PdfEditorPageState {
       });
       CustomToast.show(context, message: AppStrings.toastPreviewingErase);
     } else {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(AppStrings.textNotFoundTitle, style: const TextStyle(color: Colors.amber)),
-          content: Text(AppStrings.textNotFoundBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(AppStrings.gotIt),
+      if (isAiScan) {
+          // If ML Kit fails, show a simple toast that nothing was found on the image
+          CustomToast.show(context, message: 'AI Engine could not find any text here.');
+      } else {
+          // If Syncfusion fails, show the classic dialog offering AI Scan
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(AppStrings.textNotFoundTitle, style: const TextStyle(color: Colors.amber)),
+              content: Text(AppStrings.textNotFoundBody),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(AppStrings.gotIt),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
+          );
+      }
     }
   }
 

@@ -55,7 +55,7 @@ class EraserOverlay extends StatelessWidget {
           // Actions bar floating near the area
           Positioned(
             left: pendingEraser!.x * scale,
-            top: topOffset + (pendingEraser!.y * scale) - 60,
+            top: topOffset + (pendingEraser!.y * scale) + (pendingEraser!.height * scale) + 12,
             child: Material(
               color: Colors.transparent,
               child: Container(

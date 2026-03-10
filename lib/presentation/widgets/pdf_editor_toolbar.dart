@@ -148,6 +148,15 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
                         }
                       ),
                       ToolbarButton(
+                        icon: Icons.auto_awesome_rounded, 
+                        label: AppStrings.modeAiTools, 
+                        isActive: widget.activeMode == EditorMode.aiTools,
+                        onTap: () {
+                          _toggleMode(EditorMode.aiTools);
+                          // The popup logic and model checking will be handled inside AiToolsBottomBar
+                        }
+                      ),
+                      ToolbarButton(
                         icon: _getMarkerIcon(widget.selectedMarkerType),
                         label: AppStrings.modeMarker,
                         isActive: widget.activeMode == EditorMode.marker,

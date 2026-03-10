@@ -16,7 +16,8 @@ import '../../data/services/recent_files_service.dart';
 import '../../data/services/app_preferences_service.dart';
 import '../widgets/pdf_editor_appbar.dart';
 import '../widgets/pdf_editor_toolbar.dart';
-import '../widgets/ml_kit_bottom_bar.dart';
+// _ml_kit_bottom_bar.dart removed entirely
+import '../widgets/ai_tools_bottom_bar.dart';
 import '../widgets/custom_toast.dart';
 import '../widgets/pdf_field_overlay.dart';
 import '../widgets/eraser_overlay.dart';
@@ -27,7 +28,7 @@ part 'pdf_editor_page_actions.dart';
 
 
 
-enum EditorMode { none, erase, sign, text, image, note, marker }
+enum EditorMode { none, erase, aiTools, sign, text, image, note, marker }
 
 class PdfEditorPage extends ConsumerStatefulWidget {
   const PdfEditorPage({super.key});
@@ -51,7 +52,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
 
   // Toolbar Modes
   EditorMode _activeMode = EditorMode.none;
-  bool _useMlKit = false;
+  // _useMlKit boolean removed, because logic is now inside aiTools mode
+  String _activeAiTool = 'erase'; // Sub-mode active on AI tools (erase, edit, copy)
   PdfFieldEntity? _pendingEraser; // Temporary field for previewing eraser
   String _selectedMarkerType = 'check'; // 'check', 'close', 'square', 'circle'
 
@@ -190,45 +192,43 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           }
           
           final docName = doc.fileName;
-          const isEditing = true;
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(
-                kToolbarHeight + (isEditing ? 80.0 : 0.0)
+              preferredSize: const Size.fromHeight(
+                kToolbarHeight + 80.0
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   PdfEditorAppBar(
                     docName: docName,
-                    isEditing: isEditing,
+                    isEditing: true,
                   ),
-                  if (isEditing)
-                    PdfEditorToolbar(
-                      activeMode: _activeMode,
-                      onModeChanged: (mode) {
-                        _update(() {
-                          _activeMode = mode;
-                          _pendingEraser = null;
-                        });
-                      },
-                      onAddSignature: () => _onAddSignature(doc),
-                      onAddImage: () => _onAddImage(doc),
-                      onAddText: () => _onAddTextFromToolbar(doc),
-                      onAddNote: () => _onAddStickyNote(doc),
-                      onSave: () => _onSave(doc),
-                      onShare: () => _onShare(doc),
-                      selectedMarkerType: _selectedMarkerType,
-                    ),
+                  PdfEditorToolbar(
+                    activeMode: _activeMode,
+                    onModeChanged: (mode) {
+                      _update(() {
+                        _activeMode = mode;
+                        _pendingEraser = null;
+                      });
+                    },
+                    onAddSignature: () => _onAddSignature(doc),
+                    onAddImage: () => _onAddImage(doc),
+                    onAddText: () => _onAddTextFromToolbar(doc),
+                    onAddNote: () => _onAddStickyNote(doc),
+                    onSave: () => _onSave(doc),
+                    onShare: () => _onShare(doc),
+                    selectedMarkerType: _selectedMarkerType,
+                  ),
                 ],
               ),
             ),
-            bottomNavigationBar: _activeMode == EditorMode.erase 
-                ? MlKitBottomBar(
-                    useMlKit: _useMlKit,
-                    onChanged: (val) => _update(() => _useMlKit = val),
+            bottomNavigationBar: _activeMode == EditorMode.aiTools 
+                ? AiToolsBottomBar(
+                    activeTool: _activeAiTool,
+                    onToolChanged: (val) => _update(() => _activeAiTool = val),
                   )
                 : null,
             body: LayoutBuilder(
@@ -311,12 +311,14 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                                       );
 
                                       if (_activeMode == EditorMode.erase) {
-                                        _onEraseText(pageRelativePos, tappedPageIdx, _zoom);
+                                        _onEraseText(pageRelativePos, tappedPageIdx, _zoom, isAiScan: false);
+                                      } else if (_activeMode == EditorMode.aiTools && _activeAiTool == 'erase') {
+                                        _onEraseText(pageRelativePos, tappedPageIdx, _zoom, isAiScan: true);
                                       } else if (_activeMode == EditorMode.marker) {
                                         _onAddMarker(pageRelativePos, tappedPageIdx);
                                       } else if (_activeMode == EditorMode.none) {
                                         // Do nothing
-                                      } else {
+                                      } else if (_activeMode == EditorMode.text) {
                                         _onAddCustomText(pageRelativePos, tappedPageIdx);
                                       }
                                     }
@@ -410,7 +412,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                                 borderRadius: BorderRadius.circular(30),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF6C63FF).withOpacity(0.4),
+                                    color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),

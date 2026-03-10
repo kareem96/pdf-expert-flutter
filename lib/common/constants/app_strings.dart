@@ -64,6 +64,18 @@ class AppStrings {
       ? 'Mesin Syncfusion tidak dapat menemukan teks digital di sini.\n\nJika ini adalah dokumen scan/foto, silakan aktifkan "AI Scan (ML Kit)" di bagian bawah.'
       : 'Syncfusion engine could not find any digital text here.\n\nIf this is a scanned document/photo, please turn ON the "AI Scan (ML Kit)" toggle at the bottom.';
   static String get mlKitNotImplemented => _s == 'id' ? 'Mode AI ML Kit aktif. (Menunggu Implementasi Fase 2!)' : 'AI ML Kit mode is active. (Waiting for Phase 2 Implementation!)';
+  
+  // AI Tools specific
+  static String get modeAiTools => _s == 'id' ? 'AI Scan' : 'AI Scan';
+  static String get aiSubErase => _s == 'id' ? 'AI Eraser' : 'AI Eraser';
+  static String get aiSubEdit => _s == 'id' ? 'Magic Edit' : 'Magic Edit';
+  static String get aiSubCopy => _s == 'id' ? 'Smart Copy' : 'Smart Copy';
+  static String get aiDownloadRequired => _s == 'id' ? 'Model Belum Diunduh' : 'Model Not Downloaded';
+  static String get aiDownloadBody => _s == 'id' 
+      ? 'Fitur AI Scan memerlukan koneksi internet untuk mengunduh modul pengenalan cerdas (~15MB). Pastikan internet menyala dan ketuk "Mulai Unduh".' 
+      : 'AI Scan features require an internet connection to download the smart recognition engine (~15MB). Please ensure you are connected and tap "Start Download".';
+  static String get btnDownload => _s == 'id' ? 'Mulai Unduh' : 'Start Download';
+  static String get toastDownloadWait => _s == 'id' ? 'Sedang mengunduh di latar belakang...' : 'Downloading in background...';
 
   // Field Options Dialog
   static String optionsTitle(String type) => _s == 'id' ? 'Opsi $type' : '$type Options';
