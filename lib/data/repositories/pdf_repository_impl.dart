@@ -7,12 +7,15 @@ import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/repositories/i_pdf_repository.dart';
 import '../datasources/syncfusion_pdf_service.dart';
 import '../datasources/ml_kit_ocr_service.dart';
+import '../datasources/pdf_page_service.dart';
+import '../../domain/entities/page_action.dart';
 
 class PdfRepositoryImpl implements IPdfRepository {
   final SyncfusionPdfService pdfService;
   final MlKitOcrService mlKitOcrService;
+  final PdfPageService pageService;
 
-  PdfRepositoryImpl(this.pdfService, this.mlKitOcrService);
+  PdfRepositoryImpl(this.pdfService, this.mlKitOcrService, this.pageService);
 
   @override
   Future<PdfDocumentEntity> loadPdf(String path) {
@@ -80,6 +83,27 @@ class PdfRepositoryImpl implements IPdfRepository {
 
   @override
   Future<void> sharePdf(File file) async {
-    await Share.shareXFiles([XFile(file.path)]); // Menggunakan API yang sudah stable namun masih diberi peringatan info (deprecated) oleh linter tapi tetap berfungsi di build. Tapi baiknya saya ignore deprecated aja dulu biar lolos flutter analyze.
+    await Share.shareXFiles([XFile(file.path)]);
+  }
+
+  @override
+  Future<List<Uint8List>> getThumbnails(String path, {double dpi = 72.0}) {
+    return pageService.generateThumbnails(path, dpi: dpi);
+  }
+
+  @override
+  Future<File> applyPageChanges({
+    required String sourcePath,
+    required List<PageAction> actions,
+  }) async {
+    final tempDir = await getTemporaryDirectory();
+    final String fileName = sourcePath.split('/').last;
+    final String targetPath = '${tempDir.path}/modified_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    
+    return pageService.processPageChanges(
+      sourcePath: sourcePath,
+      actions: actions,
+      targetPath: targetPath,
+    );
   }
 }

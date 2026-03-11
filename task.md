@@ -35,7 +35,7 @@
 ### [ ] 2.1 Redaction Tool (Sensor Data Rahasia)
 - Dedicated tool to permanently wipe out sensitive text areas (ID numbers, etc.) from the PDF structure, not just drawing a box over it.
 
-### [ ] 2.3 Page Manager (Thumbnail Grid)
+### [x] 2.3 Page Manager (Thumbnail Grid)
 - UI mode to reorder (drag & drop), rotate, delete, or split pages.
 
 ### [ ] 2.4 Smart Freehand Pen (Ink/Stylus Support)
@@ -52,10 +52,9 @@
 - Utilizes Surgical Eraser combined with auto-sizing Text Overlay initialized with extracted text.
 - Provides a seamless optical illusion of editing original PDF text.
 
-### [/] 2.8 AI Tools UI Overhaul & Smart Popup
-- Separate AI Scan from the standard Eraser tool.
-- Create a dedicated "AI Scan" icon in the main toolbar.
-- Implement a "Smart Popup" to enforce ML Kit model download via `ModelManager` check before use.
+### [x] 2.8 AI Tools UI Overhaul & Smart Popup
+- Consolidated "AI Eraser" into the "AI Tools" suite as the primary default tool.
+- Implemented a unified "Smart Popup" for model management.
 
 ---
 *Note: This file is the single source of truth for all project progress and future planning.*

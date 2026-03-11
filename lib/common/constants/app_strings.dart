@@ -32,6 +32,7 @@ class AppStrings {
   static String get modeImage => _s == 'id' ? 'Gambar' : 'Image';
   static String get modeText => _s == 'id' ? 'Teks' : 'Text';
   static String get modeErase => _s == 'id' ? 'Hapus' : 'Erase';
+  static String get modeAiTools => _s == 'id' ? 'AI Tools' : 'AI Tools';
   static String get modeMarker => _s == 'id' ? 'Penanda' : 'Marker';
   static String get modeNote => _s == 'id' ? 'Catatan' : 'Note';
   static String get modeSave => _s == 'id' ? 'Simpan' : 'Save';
@@ -66,7 +67,7 @@ class AppStrings {
   static String get mlKitNotImplemented => _s == 'id' ? 'Mode AI ML Kit aktif. (Menunggu Implementasi Fase 2!)' : 'AI ML Kit mode is active. (Waiting for Phase 2 Implementation!)';
   
   // AI Tools specific
-  static String get modeAiTools => _s == 'id' ? 'AI Scan' : 'AI Scan';
+  static String get modeAiToolsLabel => _s == 'id' ? 'Fitur AI' : 'AI Features';
   static String get aiSubErase => _s == 'id' ? 'AI Eraser' : 'AI Eraser';
   static String get aiSubEdit => _s == 'id' ? 'Magic Edit' : 'Magic Edit';
   static String get aiSubCopy => _s == 'id' ? 'Smart Copy' : 'Smart Copy';

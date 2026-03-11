@@ -4,6 +4,7 @@ import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/entities/pdf_field_entity.dart';
 import '../../domain/usecases/load_pdf_usecase.dart';
 import '../../data/services/recent_files_service.dart';
+import '../../domain/entities/page_action.dart';
 import 'repository_providers.dart';
 
 part 'pdf_editor_provider.g.dart';
@@ -400,6 +401,112 @@ class PdfEditor extends _$PdfEditor {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
+  }
+
+  Future<void> applyPageActions(List<PageAction> actions) async {
+    final doc = state.value;
+    if (doc == null) return;
+
+    final List<PdfFieldEntity> existingFields = doc.fields;
+    final int totalPages = doc.pageWidths.length;
+
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(pdfRepositoryProvider);
+      
+      // 1. Apply page structure changes to the file
+      final modifiedFile = await repository.applyPageChanges(
+        sourcePath: doc.originalPath,
+        actions: actions,
+      );
+      
+      // 2. Load the structural changes (new paths, new page counts)
+      final newDocBase = await repository.loadPdf(modifiedFile.path);
+      
+      // 3. Map the fields to their new pages and rotate them if necessary
+      List<int> mapping = List.generate(totalPages, (i) => i);
+      Map<int, int> rotations = {}; // PageIndex -> cumulative rotation delta
+
+      for (final action in actions) {
+        if (action.type == PageActionType.reorder) {
+          final int from = action.pageIndex;
+          final int to = action.value as int;
+          if (from < mapping.length && to < mapping.length) {
+            final int originalIdx = mapping.removeAt(from);
+            mapping.insert(to, originalIdx);
+          }
+        } else if (action.type == PageActionType.delete) {
+          if (action.pageIndex < mapping.length) {
+            mapping.removeAt(action.pageIndex);
+          }
+        } else if (action.type == PageActionType.rotate) {
+          final int idx = action.pageIndex;
+          if (idx < mapping.length) {
+            final int originalIdx = mapping[idx];
+            rotations[originalIdx] = (rotations[originalIdx] ?? 0) + (action.value as int);
+          }
+        }
+      }
+
+      // inverted mapping: old_index -> new_index
+      Map<int, int> oldToNew = {};
+      for (int i = 0; i < mapping.length; i++) {
+        oldToNew[mapping[i]] = i;
+      }
+
+      // Filter, update pageIndex, and transform coordinates for rotation
+      final updatedFields = existingFields.map((field) {
+        if (!oldToNew.containsKey(field.pageIndex)) return null; // Deleted
+        
+        final int oldIdx = field.pageIndex;
+        final int newIdx = oldToNew[oldIdx]!;
+        final int rotationDelta = (rotations[oldIdx] ?? 0) % 360;
+
+        if (rotationDelta == 0) {
+          return field.copyWith(pageIndex: newIdx);
+        }
+
+        // Apply rotation-aware coordinate transformation
+        final double oldW = doc.pageWidths[oldIdx];
+        final double oldH = doc.pageHeights[oldIdx];
+        double x = field.x;
+        double y = field.y;
+        double w = field.width;
+        double h = field.height;
+
+        if (rotationDelta == 90 || rotationDelta == -270) {
+          // 90 Deg CW: x' = H - (y + h), y' = x
+          final nx = oldH - (y + h);
+          final ny = x;
+          x = nx; y = ny;
+          w = field.height; h = field.width;
+        } else if (rotationDelta == 180 || rotationDelta == -180) {
+          // 180 Deg: x' = W - (x + w), y' = H - (y + h)
+          x = oldW - (x + w);
+          y = oldH - (y + h);
+        } else if (rotationDelta == 270 || rotationDelta == -90) {
+          // 270 Deg CW: x' = y, y' = W - (x + w)
+          final nx = y;
+          final ny = oldW - (x + w);
+          x = nx; y = ny;
+          w = field.height; h = field.width;
+        }
+
+        return field.copyWith(
+          pageIndex: newIdx,
+          x: x, y: y,
+          width: w, height: h,
+        );
+      }).whereType<PdfFieldEntity>().toList();
+      
+      final finalDoc = newDocBase.copyWith(fields: updatedFields);
+
+      // Update history
+      _history.clear();
+      _pushHistory(finalDoc);
+      
+      return finalDoc;
+    });
   }
 }
 

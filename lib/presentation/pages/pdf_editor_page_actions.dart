@@ -438,4 +438,76 @@ extension _PdfEditorActions on _PdfEditorPageState {
       ),
     );
   }
+
+  Future<void> _showAiScanDownloadPopup() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.cloud_download_outlined, color: Color(0xFF6C63FF)),
+            const SizedBox(width: 8),
+            Text(AppStrings.aiDownloadRequired, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(AppStrings.aiDownloadBody, style: const TextStyle(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.cancel, style: const TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              _startModelDownload();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
+            ),
+            child: Text(AppStrings.btnDownload),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _startModelDownload() async {
+    if (_isAiScanDownloading) return;
+
+    _update(() => _isAiScanDownloading = true);
+    CustomToast.show(context, message: AppStrings.toastDownloadWait);
+
+    try {
+      await _mlKitModelService.downloadModel();
+      if (mounted) {
+        _update(() {
+          _isAiScanDownloading = false;
+          _activeMode = EditorMode.aiTools;
+          _activeAiTool = 'erase';
+        });
+        CustomToast.show(context, message: 'AI Scanner is ready!');
+      }
+    } catch (e) {
+      if (mounted) {
+        _update(() => _isAiScanDownloading = false);
+        CustomToast.show(context, message: 'Error: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _onPageManagerTap(String path) async {
+    final result = await Navigator.push<List<PageAction>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PageManagerPage(pdfPath: path),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      ref.read(pdfEditorProvider.notifier).applyPageActions(result);
+      CustomToast.show(context, message: 'Pages updated successfully');
+    }
+  }
 }

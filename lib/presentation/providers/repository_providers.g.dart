@@ -6,6 +6,23 @@ part of 'repository_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$pdfPageServiceHash() => r'56fabf15f592e03929bf75ffc91e60f165b786ae';
+
+/// See also [pdfPageService].
+@ProviderFor(pdfPageService)
+final pdfPageServiceProvider = AutoDisposeProvider<PdfPageService>.internal(
+  pdfPageService,
+  name: r'pdfPageServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$pdfPageServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PdfPageServiceRef = AutoDisposeProviderRef<PdfPageService>;
 String _$pdfServiceHash() => r'83b9844ab93271484ebf4e9794599d736ccd12c1';
 
 /// See also [pdfService].
@@ -40,7 +57,7 @@ final mlKitOcrServiceProvider = AutoDisposeProvider<MlKitOcrService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MlKitOcrServiceRef = AutoDisposeProviderRef<MlKitOcrService>;
-String _$pdfRepositoryHash() => r'9bf825145bc51712fab37d53228875e3643345fc';
+String _$pdfRepositoryHash() => r'74682eb97a3b1d37ed5377abb8018c10ab76a127';
 
 /// See also [pdfRepository].
 @ProviderFor(pdfRepository)

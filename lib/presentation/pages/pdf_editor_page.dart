@@ -14,6 +14,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/draft_service.dart';
 import '../../data/services/recent_files_service.dart';
 import '../../data/services/app_preferences_service.dart';
+import '../../data/services/ml_kit_model_service.dart';
+import '../../domain/entities/page_action.dart';
+import 'page_manager_page.dart';
 import '../widgets/pdf_editor_appbar.dart';
 import '../widgets/pdf_editor_toolbar.dart';
 // _ml_kit_bottom_bar.dart removed entirely
@@ -28,7 +31,7 @@ part 'pdf_editor_page_actions.dart';
 
 
 
-enum EditorMode { none, erase, aiTools, sign, text, image, note, marker }
+enum EditorMode { none, aiTools, sign, text, image, note, marker }
 
 class PdfEditorPage extends ConsumerStatefulWidget {
   const PdfEditorPage({super.key});
@@ -44,6 +47,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   final _draftService = DraftService();
   final _recentService = RecentFilesService();
   final _prefsService = AppPreferencesService();
+  final _mlKitModelService = MlKitModelService();
   int _currentPage = 1;
   double _scrollX = 0;
   double _scrollY = 0;
@@ -53,7 +57,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   // Toolbar Modes
   EditorMode _activeMode = EditorMode.none;
   // _useMlKit boolean removed, because logic is now inside aiTools mode
-  String _activeAiTool = 'erase'; // Sub-mode active on AI tools (erase, edit, copy)
+  String _activeAiTool = 'erase'; // Default to erase for Task 2.8 consolidation
+  bool _isAiScanDownloading = false;
   PdfFieldEntity? _pendingEraser; // Temporary field for previewing eraser
   String _selectedMarkerType = 'check'; // 'check', 'close', 'square', 'circle'
 
@@ -104,8 +109,9 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           _scrollY = _pdfViewerController.scrollOffset.dy;
         });
       }
-    } catch (_) {
-      // Viewer controller might not be ready yet
+    } catch (e) {
+      // Viewer controller might not be ready yet, log error if needed.
+      // debugPrint('Error in _onControllerChange: $e');
     }
   }
 
@@ -187,12 +193,10 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           if (doc == null) {
             return Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              body: Center(child: Text('Document not found', style: TextStyle(color: Colors.white))),
+              body: const Center(child: Text('Document not found', style: TextStyle(color: Colors.white))),
             );
           }
-          
-          final docName = doc.fileName;
-
+         
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: PreferredSize(
@@ -203,14 +207,26 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   PdfEditorAppBar(
-                    docName: docName,
-                    isEditing: true,
+                    docName: doc.fileName,
+                    isEditing: _activeMode != EditorMode.none,
+                    onPageManagerTap: () => _onPageManagerTap(doc.originalPath),
                   ),
                   PdfEditorToolbar(
                     activeMode: _activeMode,
-                    onModeChanged: (mode) {
+                    onModeChanged: (mode) async {
+                      if (mode == EditorMode.aiTools) {
+                        final isDownloaded = await _mlKitModelService.isModelDownloaded();
+                        if (!isDownloaded) {
+                          if (mounted) _showAiScanDownloadPopup();
+                          return;
+                        }
+                      }
+                      
                       _update(() {
                         _activeMode = mode;
+                        if (mode == EditorMode.aiTools) {
+                          _activeAiTool = 'erase'; // Default to eraser for AI Tools
+                        }
                         _pendingEraser = null;
                       });
                     },
@@ -236,7 +252,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                 // 1. Calculate document dimensions at current zoom
                 double totalDocHeight = 0;
                 final List<double> pagePixelOffsets = [];
-                final List<double> pageScales = [];
+                 final List<double> pageScales = [];
                 
                 for (int i = 0; i < doc.pageWidths.length; i++) {
                   double s = (constraints.maxWidth / doc.pageWidths[i]);
@@ -310,9 +326,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                                         (localPos.dy - pagePixelOffsets[tappedPageIdx]) / scale
                                       );
 
-                                      if (_activeMode == EditorMode.erase) {
-                                        _onEraseText(pageRelativePos, tappedPageIdx, _zoom, isAiScan: false);
-                                      } else if (_activeMode == EditorMode.aiTools && _activeAiTool == 'erase') {
+                                      if (_activeMode == EditorMode.aiTools && _activeAiTool == 'erase') {
                                         _onEraseText(pageRelativePos, tappedPageIdx, _zoom, isAiScan: true);
                                       } else if (_activeMode == EditorMode.marker) {
                                         _onAddMarker(pageRelativePos, tappedPageIdx);
@@ -360,7 +374,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                                     );
                                   },
                                   onEdit: () => _onEditField(field),
-                                  isEraserMode: _activeMode == EditorMode.erase,
+                                  isEraserMode: _activeMode == EditorMode.aiTools && _activeAiTool == 'erase',
                                   onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
                                 );
                               }),

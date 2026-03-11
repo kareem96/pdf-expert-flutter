@@ -10,11 +10,13 @@ import '../providers/pdf_editor_provider.dart';
 class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String docName;
   final bool isEditing;
+  final VoidCallback? onPageManagerTap;
 
   const PdfEditorAppBar({
     super.key,
     required this.docName,
     required this.isEditing,
+    this.onPageManagerTap,
   });
 
   @override
@@ -99,6 +101,14 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        IconButton(
+          icon: Icon(
+            Icons.grid_view_rounded,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          onPressed: () => onPageManagerTap?.call(),
+        ),
         IconButton(
           icon: Icon(
             Icons.undo_rounded,

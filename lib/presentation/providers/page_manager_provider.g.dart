@@ -1,26 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'pdf_editor_provider.dart';
+part of 'page_manager_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pdfEditorHash() => r'92e03fa521536fb6170949eb6d79c50dca530622';
+String _$pageManagerHash() => r'4e64e15764222c30b3219da2c5007caae7d219bc';
 
-/// See also [PdfEditor].
-@ProviderFor(PdfEditor)
-final pdfEditorProvider =
-    NotifierProvider<PdfEditor, AsyncValue<PdfDocumentEntity?>>.internal(
-      PdfEditor.new,
-      name: r'pdfEditorProvider',
+/// See also [PageManager].
+@ProviderFor(PageManager)
+final pageManagerProvider =
+    AutoDisposeNotifierProvider<PageManager, PageManagerState>.internal(
+      PageManager.new,
+      name: r'pageManagerProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$pdfEditorHash,
+          : _$pageManagerHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$PdfEditor = Notifier<AsyncValue<PdfDocumentEntity?>>;
+typedef _$PageManager = AutoDisposeNotifier<PageManagerState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

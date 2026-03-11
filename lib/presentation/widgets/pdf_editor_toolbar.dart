@@ -91,7 +91,7 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
           child: Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.8),
               border: Border(
                 top: BorderSide(
                   color: Theme.of(context).brightness == Brightness.dark
@@ -137,23 +137,11 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
                         }
                       ),
                       ToolbarButton(
-                        icon: Icons.cleaning_services_rounded, 
-                        label: AppStrings.modeErase, 
-                        isActive: widget.activeMode == EditorMode.erase,
-                        onTap: () {
-                          _toggleMode(EditorMode.erase);
-                          if (widget.activeMode != EditorMode.erase) {
-                            CustomToast.show(context, message: AppStrings.toastEraserActive);
-                          }
-                        }
-                      ),
-                      ToolbarButton(
                         icon: Icons.auto_awesome_rounded, 
                         label: AppStrings.modeAiTools, 
                         isActive: widget.activeMode == EditorMode.aiTools,
                         onTap: () {
                           _toggleMode(EditorMode.aiTools);
-                          // The popup logic and model checking will be handled inside AiToolsBottomBar
                         }
                       ),
                       ToolbarButton(
@@ -211,7 +199,7 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
                           end: Alignment.centerRight,
                           colors: [
                             Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white,
-                            (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white).withOpacity(0),
+                            (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white).withValues(alpha: 0),
                           ],
                         ),
                       ),
@@ -238,7 +226,7 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
                           end: Alignment.centerLeft,
                           colors: [
                             Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white,
-                            (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white).withOpacity(0),
+                            (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF252540) : Colors.white).withValues(alpha: 0),
                           ],
                         ),
                       ),

@@ -5,8 +5,14 @@ import '../../data/repositories/pdf_repository_impl.dart';
 import '../../domain/repositories/i_pdf_repository.dart';
 
 import '../../data/datasources/ml_kit_ocr_service.dart';
+import '../../data/datasources/pdf_page_service.dart';
 
 part 'repository_providers.g.dart';
+
+@riverpod
+PdfPageService pdfPageService(Ref ref) {
+  return PdfPageService();
+}
 
 @riverpod
 SyncfusionPdfService pdfService(Ref ref) {
@@ -24,5 +30,6 @@ MlKitOcrService mlKitOcrService(Ref ref) {
 IPdfRepository pdfRepository(Ref ref) {
   final pdfService = ref.watch(pdfServiceProvider);
   final mlKitService = ref.watch(mlKitOcrServiceProvider);
-  return PdfRepositoryImpl(pdfService, mlKitService);
+  final pageService = ref.watch(pdfPageServiceProvider);
+  return PdfRepositoryImpl(pdfService, mlKitService, pageService);
 }

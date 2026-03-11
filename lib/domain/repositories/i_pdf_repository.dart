@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:typed_data';
 import '../entities/pdf_document_entity.dart';
+import '../entities/page_action.dart';
 
 abstract class IPdfRepository {
   /// Extracts the boundaries of a single word at coordinates (x,y)
@@ -27,4 +29,13 @@ abstract class IPdfRepository {
 
   /// Shares a PDF file
   Future<void> sharePdf(File file);
+
+  /// Gets thumbnails for all pages
+  Future<List<Uint8List>> getThumbnails(String path, {double dpi = 72.0});
+
+  /// Applies page-level changes (reorder, rotate, delete) and returns the new file
+  Future<File> applyPageChanges({
+    required String sourcePath,
+    required List<PageAction> actions,
+  });
 }
