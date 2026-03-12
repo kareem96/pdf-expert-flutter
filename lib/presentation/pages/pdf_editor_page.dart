@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -24,6 +26,7 @@ import '../widgets/ai_tools_bottom_bar.dart';
 import '../widgets/custom_toast.dart';
 import '../widgets/pdf_field_overlay.dart';
 import '../widgets/eraser_overlay.dart';
+import '../widgets/toolbar_button.dart';
 import '../dialogs/text_editor_dialog.dart';
 import '../dialogs/marker_selector_dialog.dart';
 import '../../common/constants/app_strings.dart';
@@ -41,7 +44,14 @@ class PdfEditorPage extends ConsumerStatefulWidget {
 }
 
 class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindingObserver {
-  void _update(VoidCallback fn) => setState(fn);
+  void _update(VoidCallback fn) {
+    if (!mounted) return;
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      Future.microtask(() => setState(fn));
+    } else {
+      setState(fn);
+    }
+  }
   
   final PdfViewerController _pdfViewerController = PdfViewerController();
   final _draftService = DraftService();
@@ -57,10 +67,12 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   // Toolbar Modes
   EditorMode _activeMode = EditorMode.none;
   // _useMlKit boolean removed, because logic is now inside aiTools mode
-  String _activeAiTool = 'erase'; // Default to erase for Task 2.8 consolidation
+  String _activeAiTool = 'erase';
   bool _isAiScanDownloading = false;
+  bool _isModelDownloaded = false;
   PdfFieldEntity? _pendingEraser; // Temporary field for previewing eraser
   String _selectedMarkerType = 'check'; // 'check', 'close', 'square', 'circle'
+  bool _isToolbarExpanded = false;
 
 
   @override
@@ -68,6 +80,12 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
     super.initState();
     _pdfViewerController.addListener(_onControllerChange);
     WidgetsBinding.instance.addObserver(this);
+    _checkInitialModelStatus();
+  }
+
+  Future<void> _checkInitialModelStatus() async {
+    final status = await _mlKitModelService.isModelDownloaded();
+    _update(() => _isModelDownloaded = status);
   }
 
   @override
@@ -102,7 +120,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           _zoom != _pdfViewerController.zoomLevel ||
           _scrollX != _pdfViewerController.scrollOffset.dx ||
           _scrollY != _pdfViewerController.scrollOffset.dy) {
-        setState(() {
+        _update(() {
           _currentPage = _pdfViewerController.pageNumber;
           _zoom = _pdfViewerController.zoomLevel;
           _scrollX = _pdfViewerController.scrollOffset.dx;
@@ -199,14 +217,10 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
          
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: PreferredSize(
-              preferredSize: const Size.fromHeight(
-                kToolbarHeight + 80.0
-              ),
+            body: SafeArea(
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  PdfEditorAppBar(
+                   PdfEditorAppBar(
                     docName: doc.fileName,
                     isEditing: _activeMode != EditorMode.none,
                     onPageManagerTap: () => _onPageManagerTap(doc.originalPath),
@@ -224,9 +238,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       
                       _update(() {
                         _activeMode = mode;
-                        if (mode == EditorMode.aiTools) {
-                          _activeAiTool = 'erase'; // Default to eraser for AI Tools
-                        }
+                        if (mode == EditorMode.aiTools) _activeAiTool = 'erase'; 
                         _pendingEraser = null;
                       });
                     },
@@ -237,6 +249,41 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                     onSave: () => _onSave(doc),
                     onShare: () => _onShare(doc),
                     selectedMarkerType: _selectedMarkerType,
+                    isExpanded: _isToolbarExpanded,
+                    onToggleExpand: () => _update(() => _isToolbarExpanded = !_isToolbarExpanded),
+                  ),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        double totalDocHeight = 0;
+                        final List<double> pagePixelOffsets = [];
+                        final List<double> pageScales = [];
+
+                        for (int i = 0; i < doc.pageWidths.length; i++) {
+                          final double pWidth = doc.pageWidths[i];
+                          final double pHeight = doc.pageHeights[i];
+                          if (pWidth <= 0 || pHeight <= 0) continue; 
+                          
+                          double s = (constraints.maxWidth / pWidth);
+                          if (s <= 0 || s.isInfinite || s.isNaN) s = 1.0; 
+                          
+                          pageScales.add(s);
+                          pagePixelOffsets.add(totalDocHeight);
+                          totalDocHeight += pHeight * s;
+                        }
+
+                        if (totalDocHeight <= 0) {
+                          totalDocHeight = constraints.maxHeight > 0 ? constraints.maxHeight : 500;
+                        }
+
+                        return Stack(
+                          children: [
+                            _buildMainContent(context, doc, constraints, pagePixelOffsets, pageScales, totalDocHeight),
+                            _buildSecondaryToolbarOverlay(doc),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -247,214 +294,6 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                     onToolChanged: (val) => _update(() => _activeAiTool = val),
                   )
                 : null,
-            body: LayoutBuilder(
-              builder: (context, constraints) {
-                // 1. Calculate document dimensions at current zoom
-                double totalDocHeight = 0;
-                final List<double> pagePixelOffsets = [];
-                 final List<double> pageScales = [];
-                
-                for (int i = 0; i < doc.pageWidths.length; i++) {
-                  double s = (constraints.maxWidth / doc.pageWidths[i]);
-                  if (s <= 0) s = 1.0; 
-                  
-                  pageScales.add(s);
-                  pagePixelOffsets.add(totalDocHeight);
-                  totalDocHeight += doc.pageHeights[i] * s;
-                }
-
-                return Stack(
-                  children: [
-                    // A. PDF & FIXED OVERLAYS (ZOOMABLE)
-                    InteractiveViewer(
-                      transformationController: _transformationController,
-                      minScale: 1.0,
-                      maxScale: 6.0,
-                      panEnabled: true,
-                      scaleEnabled: true,
-                      constrained: false,
-                      onInteractionUpdate: (details) {
-                        _update(() {
-                          _zoom = _transformationController.value.getMaxScaleOnAxis();
-                          _scrollX = -_transformationController.value.getTranslation().x;
-                          _scrollY = -_transformationController.value.getTranslation().y;
-                        });
-                      },
-                      child: GestureDetector(
-                        onDoubleTap: _resetView,
-                        child: SizedBox(
-                          width: constraints.maxWidth,
-                          height: totalDocHeight,
-                          child: Stack(
-                            children: [
-                              // 1. The PDF Renderer
-                              AbsorbPointer(
-                                absorbing: true,
-                                child: SfPdfViewer.file(
-                                  File(doc.filePath),
-                                  controller: _pdfViewerController,
-                                  enableDoubleTapZooming: false,
-                                  onDocumentLoaded: (details) {},
-                                ),
-                              ),
-                              
-                              // 2. Gesture Detector Layer (Screen Relative)
-                              Positioned.fill(
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.translucent,
-                                  onTapUp: (details) {
-                                    if (_pendingEraser != null) return;
-                                    final Offset localPos = details.localPosition;
-
-                                    int tappedPageIdx = -1;
-                                    for (int i = 0; i < pagePixelOffsets.length; i++) {
-                                      final double startY = pagePixelOffsets[i];
-                                      final double endY = (i + 1 < pagePixelOffsets.length) 
-                                          ? pagePixelOffsets[i+1] 
-                                          : totalDocHeight;
-                                      
-                                      if (localPos.dy >= startY && localPos.dy < endY) {
-                                        tappedPageIdx = i;
-                                        break;
-                                      }
-                                    }
-                                    
-                                    if (tappedPageIdx != -1) {
-                                      final double scale = pageScales[tappedPageIdx];
-                                      final Offset pageRelativePos = Offset(
-                                        localPos.dx / scale, 
-                                        (localPos.dy - pagePixelOffsets[tappedPageIdx]) / scale
-                                      );
-
-                                      if (_activeMode == EditorMode.aiTools && _activeAiTool == 'erase') {
-                                        _onEraseText(pageRelativePos, tappedPageIdx, _zoom, isAiScan: true);
-                                      } else if (_activeMode == EditorMode.marker) {
-                                        _onAddMarker(pageRelativePos, tappedPageIdx);
-                                      } else if (_activeMode == EditorMode.none) {
-                                        // Do nothing
-                                      } else if (_activeMode == EditorMode.text) {
-                                        _onAddCustomText(pageRelativePos, tappedPageIdx);
-                                      }
-                                    }
-                                  },
-                                  child: Container(color: Colors.transparent),
-                                ),
-                              ),
-
-                              // 3. Document Fields Overlays
-                              ...doc.fields.where((f) => f.isNewField).map((field) {
-                                final int pIdx = field.pageIndex;
-                                if (pIdx >= pageScales.length) return const SizedBox.shrink();
-
-                                final double pageScale = pageScales[pIdx];
-                                final double pageTopPixel = pagePixelOffsets[pIdx];
-                                
-                                final double screenX = field.x * pageScale;
-                                final double screenY = pageTopPixel + (field.y * pageScale);
-
-                                return PdfFieldOverlay(
-                                  key: ValueKey(field.id),
-                                  field: field,
-                                  scale: pageScale,
-                                  offset: Offset(screenX, screenY),
-                                  onUpdatePosition: (dx, dy) {
-                                    ref.read(pdfEditorProvider.notifier).updateFieldPosition(
-                                          field.id,
-                                          field.x + (dx / pageScale),
-                                          field.y + (dy / pageScale),
-                                        );
-                                  },
-                                  onResize: (dw, dh) {
-                                    final double newW = field.width + (dw / pageScale);
-                                    final double newH = field.height + (dh / pageScale);
-                                    ref.read(pdfEditorProvider.notifier).updateFieldSize(
-                                      field.id,
-                                      newW > 10 ? newW : 10,
-                                      newH > 10 ? newH : 10,
-                                    );
-                                  },
-                                  onEdit: () => _onEditField(field),
-                                  isEraserMode: _activeMode == EditorMode.aiTools && _activeAiTool == 'erase',
-                                  onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
-                                );
-                              }),
-
-                              // 4. Pending Eraser Preview
-                              EraserOverlay(
-                                pageScales: pageScales,
-                                pagePixelOffsets: pagePixelOffsets,
-                                pendingEraser: _pendingEraser,
-                                onCancel: () => _update(() => _pendingEraser = null),
-                                onConfirm: () {
-                                   if (_pendingEraser != null) {
-                                      ref.read(pdfEditorProvider.notifier).addEraser(
-                                        _pendingEraser!.x,
-                                        _pendingEraser!.y,
-                                        _pendingEraser!.width,
-                                        _pendingEraser!.height,
-                                        _pendingEraser!.pageIndex,
-                                      );
-                                      _update(() => _pendingEraser = null);
-                                      CustomToast.show(context, message: AppStrings.toastTextErased);
-                                   }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // B. SCREEN-STATIC OVERLAYS (NOT ZOOMABLE)
-                    if (_zoom > 1.05)
-                      Positioned(
-                        bottom: 20,
-                        right: 20,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _resetView,
-                            borderRadius: BorderRadius.circular(30),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF6C63FF), Color(0xFF8B80FF)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(30),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.aspect_ratio_rounded, color: Colors.white, size: 18),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    AppStrings.resetView,
-                                    style: GoogleFonts.inter(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
           );
         },
         loading: () => Scaffold(
@@ -471,6 +310,286 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
     );
   }
 
+  Widget _buildSecondaryToolbarOverlay(PdfDocumentEntity doc) {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.elasticOut,
+      top: _isToolbarExpanded ? 10 : -100,
+      left: 0,
+      right: 0,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: _isToolbarExpanded ? 1.0 : 0.0,
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            height: 70,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ToolbarButton(
+                          icon: Icons.image_outlined,
+                          label: AppStrings.modeImage,
+                          isActive: _activeMode == EditorMode.image,
+                          onTap: () {
+                            _update(() => _activeMode = EditorMode.image);
+                            _onAddImage(doc);
+                          },
+                        ),
+                        ToolbarButton(
+                          icon: Icons.sticky_note_2_outlined,
+                          label: AppStrings.modeNote,
+                          isActive: _activeMode == EditorMode.note,
+                          onTap: () {
+                            _update(() => _activeMode = EditorMode.note);
+                            _onAddStickyNote(doc);
+                          },
+                        ),
+                        ToolbarButton(
+                          icon: Icons.save_outlined,
+                          label: AppStrings.modeSave,
+                          onTap: () {
+                            _update(() => _activeMode = EditorMode.none);
+                            _onSave(doc);
+                          },
+                        ),
+                        ToolbarButton(
+                          icon: Icons.share_outlined,
+                          label: AppStrings.modeShare,
+                          onTap: () {
+                            _update(() => _activeMode = EditorMode.none);
+                            _onShare(doc);
+                          },
+                        ),
 
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainContent(BuildContext context, PdfDocumentEntity doc, BoxConstraints constraints, List<double> pagePixelOffsets, List<double> pageScales, double totalDocHeight) {
+    return Stack(
+      children: [
+        // 1. A. PDF & FIXED OVERLAYS (ZOOMABLE)
+        InteractiveViewer(
+          transformationController: _transformationController,
+          minScale: 1.0,
+          maxScale: 6.0,
+          panEnabled: true,
+          scaleEnabled: true,
+          constrained: false,
+          onInteractionUpdate: (details) {
+            _update(() {
+              _zoom = _transformationController.value.getMaxScaleOnAxis();
+              _scrollX = -_transformationController.value.getTranslation().x;
+              _scrollY = -_transformationController.value.getTranslation().y;
+            });
+          },
+          child: GestureDetector(
+            onDoubleTap: _resetView,
+            child: SizedBox(
+              width: constraints.maxWidth,
+              height: totalDocHeight,
+              child: Stack(
+                children: [
+                  // 1. The PDF Renderer
+                  AbsorbPointer(
+                    absorbing: true,
+                    child: SfPdfViewer.file(
+                      File(doc.filePath),
+                      controller: _pdfViewerController,
+                      enableDoubleTapZooming: false,
+                      onDocumentLoaded: (details) {},
+                    ),
+                  ),
+
+                  // 2. Gesture Detector Layer (Screen Relative)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapUp: (details) {
+                        if (_pendingEraser != null) return;
+                        final Offset localPos = details.localPosition;
+
+                        int tappedPageIdx = -1;
+                        for (int i = 0; i < pagePixelOffsets.length; i++) {
+                          final double startY = pagePixelOffsets[i];
+                          final double endY = (i + 1 < pagePixelOffsets.length) 
+                              ? pagePixelOffsets[i+1] 
+                              : totalDocHeight;
+
+                          if (localPos.dy >= startY && localPos.dy < endY) {
+                            tappedPageIdx = i;
+                            break;
+                          }
+                        }
+
+                        if (tappedPageIdx != -1) {
+                          final double scale = pageScales[tappedPageIdx];
+                          final Offset pageRelativePos = Offset(
+                            localPos.dx / scale, 
+                            (localPos.dy - pagePixelOffsets[tappedPageIdx]) / scale
+                          );
+
+                          if (_activeMode == EditorMode.aiTools && _activeAiTool == 'erase') {
+                            _onEraseText(pageRelativePos, tappedPageIdx, _zoom, isAiScan: _isModelDownloaded);
+                          } else if (_activeMode == EditorMode.marker) {
+                            _onAddMarker(pageRelativePos, tappedPageIdx);
+                          } else if (_activeMode == EditorMode.none) {
+                            // Do nothing
+                          } else if (_activeMode == EditorMode.text) {
+                            _onAddCustomText(pageRelativePos, tappedPageIdx);
+                          }
+                        }
+                      },
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+
+                  // 3. Document Fields Overlays
+                  ...doc.fields.where((PdfFieldEntity f) => f.isNewField).map((field) {
+                    final int pIdx = field.pageIndex;
+                    if (pIdx >= pageScales.length) return const SizedBox.shrink();
+
+                    final double pageScale = pageScales[pIdx];
+                    final double pageTopPixel = pagePixelOffsets[pIdx];
+
+                    final double screenX = field.x * pageScale;
+                    final double screenY = pageTopPixel + (field.y * pageScale);
+
+                    return PdfFieldOverlay(
+                      key: ValueKey(field.id),
+                      field: field,
+                      scale: pageScale,
+                      offset: Offset(screenX, screenY),
+                      onUpdatePosition: (dx, dy) {
+                        ref.read(pdfEditorProvider.notifier).updateFieldPosition(
+                              field.id,
+                              field.x + (dx / pageScale),
+                              field.y + (dy / pageScale),
+                            );
+                      },
+                      onResize: (dw, dh) {
+                        final double newW = field.width + (dw / pageScale);
+                        final double newH = field.height + (dh / pageScale);
+                        ref.read(pdfEditorProvider.notifier).updateFieldSize(
+                              field.id,
+                              newW > 10 ? newW : 10,
+                              newH > 10 ? newH : 10,
+                            );
+                      },
+                      onEdit: () => _onEditField(field),
+                      isEraserMode: _activeMode == EditorMode.aiTools && _activeAiTool == 'erase',
+                      onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
+                    );
+                  }),
+
+                  // 4. Pending Eraser Preview
+                  EraserOverlay(
+                    pageScales: pageScales,
+                    pagePixelOffsets: pagePixelOffsets,
+                    pendingEraser: _pendingEraser,
+                    onCancel: () => _update(() => _pendingEraser = null),
+                    onConfirm: () {
+                      if (_pendingEraser != null) {
+                        ref.read(pdfEditorProvider.notifier).addEraser(
+                              _pendingEraser!.x,
+                              _pendingEraser!.y,
+                              _pendingEraser!.width,
+                              _pendingEraser!.height,
+                              _pendingEraser!.pageIndex,
+                            );
+                        _update(() => _pendingEraser = null);
+                        CustomToast.show(context, message: AppStrings.toastTextErased);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // 2. B. SCREEN-STATIC OVERLAYS (NOT ZOOMABLE)
+        if (_zoom > 1.05)
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _resetView,
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6C63FF), Color(0xFF8B80FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.aspect_ratio_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppStrings.resetView,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
 }

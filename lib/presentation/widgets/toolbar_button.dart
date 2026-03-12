@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Compact toolbar button used in the secondary action bar row.
 class ToolbarButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -18,40 +17,59 @@ class ToolbarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        width: 68,
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: isActive ? Colors.amber.withOpacity(0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isActive ? Colors.amber.withOpacity(0.5) : Colors.transparent,
-          )
+          borderRadius: BorderRadius.circular(12),
+          gradient: isActive 
+            ? const LinearGradient(
+                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+              )
+            : null,
+          boxShadow: isActive ? [
+            BoxShadow(
+              color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+              blurRadius: 8, offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon, 
-              size: 20, 
-              color: isActive 
-                ? Colors.amber 
-                : Theme.of(context).colorScheme.onSurface,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label, 
-              style: GoogleFonts.inter(
-                fontSize: 10, 
-                color: isActive 
-                    ? Colors.amber 
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        // USING CONSTRAINEDBOX TO ENSURE IT NEVER GOES BELOW A CERTAIN HEIGHT WITHOUT SCALING
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 50, maxHeight: 72),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon, size: 20, 
+                    color: isActive ? Colors.white : colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label, 
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 10, 
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                      color: isActive ? Colors.white : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

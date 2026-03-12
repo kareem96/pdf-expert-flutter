@@ -31,6 +31,22 @@ class PdfFieldOverlay extends StatefulWidget {
 }
 
 class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
+  Color _parseColor(String colorStr, {Color fallback = Colors.black}) {
+    try {
+      String clean = colorStr.replaceAll('#', '');
+      if (!clean.startsWith('0x')) {
+        if (clean.length == 6) clean = '0xFF$clean';
+        else if (clean.length == 8) clean = '0x$clean';
+      } else if (clean.startsWith('0x') && clean.length == 8) {
+        // Handle 0xRRGGBB format by adding FF alpha
+        clean = '0xFF${clean.substring(2)}';
+      }
+      return Color(int.parse(clean));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   double _dragDx = 0;
   double _dragDy = 0;
   
@@ -93,7 +109,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
               decoration: BoxDecoration(
                 color: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
                     ? Colors.transparent 
-                    : (isEraser ? Color(int.parse(widget.field.backgroundColor ?? '0xFFFFFFFF')) : Theme.of(context).colorScheme.onSurface.withOpacity(0.05)),
+                    : (isEraser ? _parseColor(widget.field.backgroundColor ?? '0xFFFFFFFF') : Theme.of(context).colorScheme.onSurface.withOpacity(0.05)),
                 border: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
                     ? null
                     : isEraser 
@@ -134,7 +150,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                                 widget.field.value, 
                                 widget.field.width, 
                                 widget.field.height,
-                                color: Color(int.parse(widget.field.textColor)),
+                                color: _parseColor(widget.field.textColor),
                               ),
                             ),
                           )
@@ -144,7 +160,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                                 : EdgeInsets.zero,
                             decoration: widget.field.backgroundColor != null 
                                 ? BoxDecoration(
-                                    color: Color(int.parse(widget.field.backgroundColor!)),
+                                    color: _parseColor(widget.field.backgroundColor!),
                                     border: Border.all(color: Colors.amber.shade600, width: 2),
                                     borderRadius: BorderRadius.circular(4),
                                     boxShadow: [
@@ -161,7 +177,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                               style: _buildGoogleFontStyle(
                                 widget.field.fontFamily,
                                 fontSize: widget.field.fontSize * widget.scale,
-                                color: Color(int.parse(widget.field.textColor)),
+                                color: _parseColor(widget.field.textColor),
                                 fontWeight: widget.field.isBold ? FontWeight.bold : FontWeight.normal,
                                 fontStyle: widget.field.isItalic ? FontStyle.italic : FontStyle.normal,
                               ).copyWith(height: 1.1),

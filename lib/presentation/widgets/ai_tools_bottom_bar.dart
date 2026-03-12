@@ -147,7 +147,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
 
     return GestureDetector(
       onTap: () {
-        if (isDisabled) {
+        if (isDisabled && id != 'erase') {
            _showDownloadPopup();
            return;
         }
@@ -168,14 +168,14 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
           ),
         ),
         child: Opacity(
-          opacity: isDisabled ? 0.4 : 1.0,
+          opacity: (isDisabled && id != 'erase') ? 0.4 : 1.0,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon, 
                 size: 18, 
-                color: isActive && !isDisabled ? const Color(0xFF6C63FF) : Colors.white70
+                color: isActive ? const Color(0xFF6C63FF) : Colors.white70
               ),
               const SizedBox(width: 8),
               if (isBeta) ...[
@@ -202,10 +202,21 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                   label,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    fontWeight: isActive && !isDisabled ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive && !isDisabled ? const Color(0xFF6C63FF) : Colors.white70,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive ? const Color(0xFF6C63FF) : Colors.white70,
                   ),
                 ),
+                if (id == 'erase' && isDisabled) ...[
+                   const SizedBox(width: 4),
+                   Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text('Basic', style: TextStyle(fontSize: 8, color: Colors.blue)),
+                  ),
+                ],
               ],
             ],
           ),

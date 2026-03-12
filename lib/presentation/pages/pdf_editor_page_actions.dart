@@ -484,6 +484,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
       if (mounted) {
         _update(() {
           _isAiScanDownloading = false;
+          _isModelDownloaded = true;
           _activeMode = EditorMode.aiTools;
           _activeAiTool = 'erase';
         });
