@@ -82,19 +82,18 @@ extension _PdfEditorActions on _PdfEditorPageState {
              ),
              TextButton(
                onPressed: () async {
-                 if (signatureController.isNotEmpty) {
-                   final signatureBytes = await signatureController.toPngBytes();
-                   if (signatureBytes != null) {
-                     final tempDir = await getTemporaryDirectory();
-                     final file = await File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png').create();
-                     file.writeAsBytesSync(signatureBytes);
-                     final spawn = _getSpawnPoints(doc);
-                     ref.read(pdfEditorProvider.notifier).addImage(
-                       spawn['x'], spawn['y'], file.path, spawn['pageIndex'], isSignature: true
-                     );
-                   }
-                   Navigator.pop(context);
-                 }
+                 if (signatureController.isEmpty) return;
+                 final signatureBytes = await signatureController.toPngBytes();
+                 if (signatureBytes == null) return;
+                 
+                 final tempDir = await getTemporaryDirectory();
+                 final file = await File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png').create();
+                 file.writeAsBytesSync(signatureBytes);
+                 final spawn = _getSpawnPoints(doc);
+                 ref.read(pdfEditorProvider.notifier).addImage(
+                   spawn['x'], spawn['y'], file.path, spawn['pageIndex'], isSignature: true
+                 );
+                 Navigator.pop(context);
                },
                child: Text(AppStrings.add),
              ),
@@ -332,7 +331,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
     } else {
       if (isAiScan) {
           // If ML Kit fails, show a simple toast that nothing was found on the image
-          CustomToast.show(context, message: 'AI Engine could not find any text here.');
+          CustomToast.show(context, message: AppStrings.toastAiNoTextFound);
       } else {
           // If Syncfusion fails, show the classic dialog offering AI Scan
           showDialog(
@@ -488,7 +487,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
           _activeMode = EditorMode.aiTools;
           _activeAiTool = 'erase';
         });
-        CustomToast.show(context, message: 'AI Scanner is ready!');
+        CustomToast.show(context, message: AppStrings.toastAiScannerReady);
       }
     } catch (e) {
       if (mounted) {
@@ -508,7 +507,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
 
     if (result != null && result.isNotEmpty) {
       ref.read(pdfEditorProvider.notifier).applyPageActions(result);
-      CustomToast.show(context, message: 'Pages updated successfully');
+      CustomToast.show(context, message: AppStrings.toastPagesUpdated);
     }
   }
 }

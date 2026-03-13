@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import '../../domain/entities/pdf_field_entity.dart';
 
@@ -33,60 +35,77 @@ class EraserOverlay extends StatelessWidget {
       bottom: 0,
       child: Stack(
         children: [
-          // The highlight of what will be erased
+          // 1. Subtle highlight area
           Positioned(
-            left: pendingEraser!.x * scale,
-            top: topOffset + (pendingEraser!.y * scale),
+            left: (pendingEraser!.x * scale) - 2,
+            top: topOffset + (pendingEraser!.y * scale) - 2,
             child: Container(
-              width: pendingEraser!.width * scale,
-              height: pendingEraser!.height * scale,
+              width: (pendingEraser!.width * scale) + 4,
+              height: (pendingEraser!.height * scale) + 4,
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.35),
-                border: Border.all(color: Colors.red, width: 2),
-                boxShadow: [
-                  BoxShadow(color: Colors.red.withOpacity(0.2), blurRadius: 10),
-                ],
-              ),
-              child: const Center(
-                child: Icon(Icons.auto_fix_high, color: Colors.white, size: 20),
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.5), width: 1.5),
               ),
             ),
           ),
-          // Actions bar floating near the area
+          // 2. Premium Compact Action Pill
           Positioned(
-            left: pendingEraser!.x * scale,
-            top: topOffset + (pendingEraser!.y * scale) + (pendingEraser!.height * scale) + 12,
+            left: (pendingEraser!.x * scale) + (pendingEraser!.width * scale / 2) - 60,
+            top: topOffset + (pendingEraser!.y * scale) - 50,
             child: Material(
               color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.shade400, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Erase this?', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), size: 18),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: onCancel,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    width: 120,
+                    height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                          Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3),
+                        width: 0.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    IconButton(
-                      icon: const Icon(Icons.check, color: Colors.greenAccent, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: onConfirm,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildPillAction(
+                          icon: Icons.close_rounded,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
+                          onTap: onCancel,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 18,
+                          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                        ),
+                        _buildPillAction(
+                          icon: Icons.check_rounded,
+                          color: const Color(0xFF6C63FF),
+                          onTap: onConfirm,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -95,4 +114,20 @@ class EraserOverlay extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildPillAction({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, color: color, size: 20),
+      ),
+    );
+  }
+
 }

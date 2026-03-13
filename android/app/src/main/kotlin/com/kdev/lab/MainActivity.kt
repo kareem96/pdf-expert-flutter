@@ -1,4 +1,4 @@
-package com.example.pdfexpert.pdf_expert
+package com.kdev.lab
 
 import io.flutter.embedding.android.FlutterActivity
 

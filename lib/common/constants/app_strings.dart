@@ -77,6 +77,11 @@ class AppStrings {
       : 'AI Scan features require an internet connection to download the smart recognition engine (~15MB). Please ensure you are connected and tap "Start Download".';
   static String get btnDownload => _s == 'id' ? 'Mulai Unduh' : 'Start Download';
   static String get toastDownloadWait => _s == 'id' ? 'Sedang mengunduh di latar belakang...' : 'Downloading in background...';
+  static String get toastAiScannerReady => _s == 'id' ? 'AI Scanner siap digunakan!' : 'AI Scanner is ready!';
+  static String get toastAiNoTextFound => _s == 'id' ? 'Mesin AI tidak dapat menemukan teks di sini.' : 'AI Engine could not find any text here.';
+  static String get toastPagesUpdated => _s == 'id' ? 'Halaman berhasil diperbarui' : 'Pages updated successfully';
+  static String get labelBeta => 'Beta';
+  static String get labelBasic => _s == 'id' ? 'Dasar' : 'Basic';
 
   // Field Options Dialog
   static String optionsTitle(String type) => _s == 'id' ? 'Opsi $type' : '$type Options';

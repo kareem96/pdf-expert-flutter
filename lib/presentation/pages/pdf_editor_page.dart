@@ -361,6 +361,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                             _onAddImage(doc);
                           },
                         ),
+/*
                         ToolbarButton(
                           icon: Icons.sticky_note_2_outlined,
                           label: AppStrings.modeNote,
@@ -370,6 +371,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                             _onAddStickyNote(doc);
                           },
                         ),
+*/
                         ToolbarButton(
                           icon: Icons.save_outlined,
                           label: AppStrings.modeSave,

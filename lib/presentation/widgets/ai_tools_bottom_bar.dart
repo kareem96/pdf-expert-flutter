@@ -97,7 +97,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
           _isDownloading = false;
           _isModelReady = true;
         });
-        CustomToast.show(context, message: 'AI Scanner is ready!');
+        CustomToast.show(context, message: AppStrings.toastAiScannerReady);
       }
     } catch (e) {
       if (mounted) {
@@ -175,7 +175,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
               Icon(
                 icon, 
                 size: 18, 
-                color: isActive ? const Color(0xFF6C63FF) : Colors.white70
+                color: isActive ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7)
               ),
               const SizedBox(width: 8),
               if (isBeta) ...[
@@ -184,7 +184,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: isActive && !isDisabled ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive && !isDisabled ? const Color(0xFF6C63FF) : Colors.white70,
+                    color: isActive && !isDisabled ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
                     decoration: TextDecoration.lineThrough,
                   ),
                 ),
@@ -195,7 +195,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                     color: Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text('Beta', style: TextStyle(fontSize: 8, color: Colors.orange)),
+                  child: Text(AppStrings.labelBeta, style: const TextStyle(fontSize: 8, color: Colors.orange)),
                 ),
               ] else ...[
                 Text(
@@ -203,7 +203,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive ? const Color(0xFF6C63FF) : Colors.white70,
+                    color: isActive ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
                   ),
                 ),
                 if (id == 'erase' && isDisabled) ...[
@@ -214,7 +214,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                       color: Colors.blue.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text('Basic', style: TextStyle(fontSize: 8, color: Colors.blue)),
+                    child: Text(AppStrings.labelBasic, style: const TextStyle(fontSize: 8, color: Colors.blue)),
                   ),
                 ],
               ],
