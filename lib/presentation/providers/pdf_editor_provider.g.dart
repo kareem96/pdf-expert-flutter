@@ -6,7 +6,7 @@ part of 'pdf_editor_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pdfEditorHash() => r'92e03fa521536fb6170949eb6d79c50dca530622';
+String _$pdfEditorHash() => r'f77cda56d5fc88a0e03c247bf68de41e50b5b9eb';
 
 /// See also [PdfEditor].
 @ProviderFor(PdfEditor)

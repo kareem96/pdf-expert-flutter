@@ -29,15 +29,28 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('Page Manager', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Manage Pages', 
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
+        centerTitle: true,
         actions: [
           if (state.pendingActions.isNotEmpty)
-            TextButton.icon(
-              onPressed: () => _handleSave(),
-              icon: const Icon(Icons.check_circle_outline, color: Colors.greenAccent),
-              label: const Text('Apply', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
+                onPressed: () => _handleSave(),
+                child: const Text(
+                  'Apply', 
+                  style: TextStyle(color: Color(0xFF6C63FF), fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
         ],
       ),
@@ -61,6 +74,7 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
   }
 
   Widget _buildThumbnailItem(int index, dynamic thumbData) {
+    final state = ref.watch(pageManagerProvider);
     return Container(
       key: ValueKey('page_$index'),
       margin: const EdgeInsets.only(bottom: 16),
@@ -93,7 +107,10 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
               onPressed: () => ref.read(pageManagerProvider.notifier).rotatePage(index, 90),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+              icon: Icon(
+                Icons.delete_outline_rounded, 
+                color: state.thumbnails.length > 1 ? Colors.redAccent : Colors.white24,
+              ),
               onPressed: () => _confirmDelete(index),
             ),
             const Icon(Icons.drag_handle_rounded, color: Colors.white24),
@@ -104,6 +121,14 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
   }
 
   void _confirmDelete(int index) {
+    if (ref.read(pageManagerProvider).thumbnails.length <= 1) {
+      CustomToast.show(
+        context, 
+        message: 'Cannot delete the last page', 
+        isError: true,
+      );
+      return;
+    }
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
