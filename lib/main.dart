@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'common/constants/app_strings.dart';
 import 'presentation/pages/splash_page.dart';
 import 'presentation/providers/app_theme_provider.dart';
 import 'presentation/providers/app_language_provider.dart';
@@ -27,7 +28,7 @@ class MyApp extends ConsumerWidget {
     final locale = ref.watch(languageProvider);
 
     return MaterialApp(
-      title: 'PDF Expert',
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

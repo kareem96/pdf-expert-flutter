@@ -77,11 +77,20 @@ class AppStrings {
       : 'AI Scan features require an internet connection to download the smart recognition engine (~15MB). Please ensure you are connected and tap "Start Download".';
   static String get btnDownload => _s == 'id' ? 'Mulai Unduh' : 'Start Download';
   static String get toastDownloadWait => _s == 'id' ? 'Sedang mengunduh di latar belakang...' : 'Downloading in background...';
+  static String get toastDownloadFailed => _s == 'id' ? 'Unduhan gagal. Tidak ada koneksi internet.' : 'Download failed. No internet connection.';
+  static String get toastErrorInit => _s == 'id' ? 'Kesalahan inisialisasi: ' : 'Error initializing: ';
   static String get toastAiScannerReady => _s == 'id' ? 'AI Scanner siap digunakan!' : 'AI Scanner is ready!';
   static String get toastAiNoTextFound => _s == 'id' ? 'Mesin AI tidak dapat menemukan teks di sini.' : 'AI Engine could not find any text here.';
   static String get toastPagesUpdated => _s == 'id' ? 'Halaman berhasil diperbarui' : 'Pages updated successfully';
   static String get labelBeta => 'Beta';
   static String get labelBasic => _s == 'id' ? 'Dasar' : 'Basic';
+  static String get comingSoonTitle => _s == 'id' ? 'Segera Hadir!' : 'Coming Soon!';
+  static String get magicEditDesc => _s == 'id' 
+      ? 'Gunakan kekuatan AI untuk mengubah isi teks PDF secara cerdas tanpa merusak format.' 
+      : 'Use AI power to smartly change PDF text content without breaking the format.';
+  static String get smartCopyDesc => _s == 'id' 
+      ? 'Salin data tabel atau teks kompleks dari PDF scan dengan struktur yang tetap rapi.' 
+      : 'Copy table data or complex text from scanned PDFs while keeping the structure neat.';
 
   // Field Options Dialog
   static String optionsTitle(String type) => _s == 'id' ? 'Opsi $type' : '$type Options';

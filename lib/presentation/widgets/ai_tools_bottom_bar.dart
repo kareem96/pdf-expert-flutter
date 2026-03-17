@@ -80,7 +80,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
       if (!hasInternet) {
         if (mounted) {
            setState(() => _isDownloading = false);
-           CustomToast.show(context, message: 'Download failed. No internet connection.', isError: true);
+           CustomToast.show(context, message: AppStrings.toastDownloadFailed, isError: true);
         }
         return;
       }
@@ -102,9 +102,40 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
     } catch (e) {
       if (mounted) {
         setState(() => _isDownloading = false);
-        CustomToast.show(context, message: 'Error initializing: $e', isError: true);
+        CustomToast.show(context, message: '${AppStrings.toastErrorInit}$e', isError: true);
       }
     }
+  }
+
+  void _showComingSoonPopup(String title, String description) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.auto_awesome, color: Color(0xFF6C63FF)),
+            const SizedBox(width: 8),
+            Text(AppStrings.comingSoonTitle, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF6C63FF))),
+            const SizedBox(height: 8),
+            Text(description, style: GoogleFonts.inter(fontSize: 14)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.ok, style: const TextStyle(color: Color(0xFF6C63FF))),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDownloadPopup() {
@@ -147,6 +178,15 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
 
     return GestureDetector(
       onTap: () {
+        if (isBeta) {
+          if (id == 'edit') {
+            _showComingSoonPopup(AppStrings.aiSubEdit, AppStrings.magicEditDesc);
+          } else if (id == 'copy') {
+            _showComingSoonPopup(AppStrings.aiSubCopy, AppStrings.smartCopyDesc);
+          }
+          return;
+        }
+
         if (isDisabled && id != 'erase') {
            _showDownloadPopup();
            return;
