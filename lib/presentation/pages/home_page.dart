@@ -142,6 +142,47 @@ class _HomePageState extends ConsumerState<HomePage> {
     _loadRecents();
   }
 
+  Future<void> _renameRecentFile(RecentFileEntry entry) async {
+    String nameWithoutExt = entry.fileName;
+    if (nameWithoutExt.toLowerCase().endsWith('.pdf')) {
+      nameWithoutExt = nameWithoutExt.substring(0, nameWithoutExt.length - 4);
+    }
+    final controller = TextEditingController(text: nameWithoutExt);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.dialogRenameTitle),
+        content: TextField(
+          controller: controller,
+          autoFocus: true,
+          decoration: InputDecoration(
+            hintText: AppStrings.dialogRenameHint,
+            suffixText: '.pdf',
+            prefixIcon: const Icon(Icons.edit_outlined, size: 18),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.cancel)),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(AppStrings.ok),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty && newName != nameWithoutExt) {
+      try {
+        await _recentService.renameFile(entry.filePath, newName);
+        CustomToast.show(context, message: AppStrings.toastRenameSuccess);
+        _loadRecents();
+      } catch (e) {
+        CustomToast.show(context, message: e.toString(), isError: true);
+      }
+    }
+  }
+
   void _showSettingsDialog() {
     showDialog(
       context: context,
@@ -368,6 +409,23 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ),
                             ),
 
+                          // ── Swipe Hint ──────────────────────────────────
+                          if (filteredFiles.isNotEmpty) SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Center(
+                                child: Text(
+                                  AppStrings.hintSwipeDelete,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    color: const Color(0xFF8888AA).withOpacity(0.7),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
                           // ── Recent list ───────────────────────────────────
                           SliverList(
                             delegate: SliverChildBuilderDelegate(
@@ -381,6 +439,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       entry: filteredFiles[i],
                                       onTap: () => _onTapRecentFile(filteredFiles[i]),
                                       onDismiss: () => _removeRecentFile(filteredFiles[i]),
+                                      onRename: () => _renameRecentFile(filteredFiles[i]),
                                     ),
                                   ),
                                 ),
@@ -657,11 +716,13 @@ class _RecentFileTile extends ConsumerWidget {
   final RecentFileEntry entry;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
+  final VoidCallback onRename;
 
   const _RecentFileTile({
     required this.entry,
     required this.onTap,
     required this.onDismiss,
+    required this.onRename,
   });
 
   String _formatDate(DateTime dt) {
@@ -793,43 +854,59 @@ class _RecentFileTile extends ConsumerWidget {
           subtitle: Text(_formatDate(entry.lastOpened),
             style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8888AA)),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.share_outlined, color: Color(0xFF8888AA), size: 20),
-                onPressed: () async {
-                  try {
-                    final file = File(entry.filePath);
-                    if (await file.exists()) {
-                      await Share.shareXFiles([XFile(entry.filePath)], text: 'Here is my document: ${entry.fileName}');
-                    } else {
-                      if (context.mounted) {
-                        CustomToast.show(context, message: 'File not found or moved.', isError: true);
-                      }
-                    }
-                  } catch (e) {
+          trailing: PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8888AA), size: 22),
+            onSelected: (val) async {
+              if (val == 'rename') onRename();
+              if (val == 'delete') onDismiss();
+              if (val == 'share') {
+                try {
+                  final file = File(entry.filePath);
+                  if (await file.exists()) {
+                    await Share.shareXFiles([XFile(entry.filePath)], text: 'PDF Expert: ${entry.fileName}');
+                  } else {
                     if (context.mounted) {
-                      CustomToast.show(context, message: 'Could not share file: $e', isError: true);
+                      CustomToast.show(context, message: 'File not found.', isError: true);
                     }
                   }
-                },
+                } catch (e) {
+                  if (context.mounted) {
+                    CustomToast.show(context, message: 'Share failed: $e', isError: true);
+                  }
+                }
+              }
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'rename',
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_outlined, size: 18),
+                    const SizedBox(width: 10),
+                    Text(AppStrings.actionRename, style: const TextStyle(fontSize: 13)),
+                  ],
+                ),
               ),
-              const SizedBox(width: 4),
-              if (entry.hasDraft)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF9B59B6)]),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.3), blurRadius: 4)],
-                  ),
-                  child: Text(AppStrings.labelDraft,
-                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
-                  ),
-                )
-              else
-                const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF44445A), size: 14),
+              PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    const Icon(Icons.share_outlined, size: 18),
+                    const SizedBox(width: 10),
+                    Text(AppStrings.modeShare, style: const TextStyle(fontSize: 13)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                    const SizedBox(width: 10),
+                    Text(AppStrings.delete, style: const TextStyle(fontSize: 13, color: Colors.redAccent)),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

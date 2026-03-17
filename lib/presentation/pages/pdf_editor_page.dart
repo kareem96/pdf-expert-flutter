@@ -241,6 +241,12 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                         if (mode == EditorMode.aiTools) _activeAiTool = 'erase'; 
                         _pendingEraser = null;
                       });
+
+                      if (mode == EditorMode.text) {
+                        CustomToast.show(context, message: AppStrings.toastTextActive);
+                      } else if (mode == EditorMode.marker) {
+                        CustomToast.show(context, message: AppStrings.toastMarkerActive);
+                      }
                     },
                     onAddSignature: () => _onAddSignature(doc),
                     onAddImage: () => _onAddImage(doc),
@@ -259,6 +265,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                         final List<double> pagePixelOffsets = [];
                         final List<double> pageScales = [];
 
+                        const double pageSpacing = 4.0; // Default SfPdfViewer spacing
+
                         for (int i = 0; i < doc.pageWidths.length; i++) {
                           final double pWidth = doc.pageWidths[i];
                           final double pHeight = doc.pageHeights[i];
@@ -269,7 +277,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                           
                           pageScales.add(s);
                           pagePixelOffsets.add(totalDocHeight);
-                          totalDocHeight += pHeight * s;
+                          totalDocHeight += (pHeight * s) + pageSpacing; // Account for the gap between pages
                         }
 
                         if (totalDocHeight <= 0) {
@@ -413,10 +421,30 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           scaleEnabled: true,
           constrained: false,
           onInteractionUpdate: (details) {
+            final double zoom = _transformationController.value.getMaxScaleOnAxis();
+            final double sy = -_transformationController.value.getTranslation().y;
+            final double sx = -_transformationController.value.getTranslation().x;
+            
+            // Calculate current page based on scroll position - Refined for precision
+            int newPage = 1;
+            // Use a point closer to the top (e.g., 20% of screen height) for more natural transition
+            final double detectionY = sy + (constraints.maxHeight * 0.2); 
+            for (int i = 0; i < pagePixelOffsets.length; i++) {
+              final double start = pagePixelOffsets[i] * zoom;
+              final double end = (i + 1 < pagePixelOffsets.length) 
+                ? pagePixelOffsets[i+1] * zoom 
+                : totalDocHeight * zoom;
+              if (detectionY >= start && detectionY <= end) {
+                newPage = i + 1;
+                break;
+              }
+            }
+
             _update(() {
-              _zoom = _transformationController.value.getMaxScaleOnAxis();
-              _scrollX = -_transformationController.value.getTranslation().x;
-              _scrollY = -_transformationController.value.getTranslation().y;
+              _zoom = zoom;
+              _scrollX = sx;
+              _scrollY = sy;
+              _currentPage = newPage;
             });
           },
           child: GestureDetector(
@@ -433,11 +461,14 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       File(doc.filePath),
                       controller: _pdfViewerController,
                       enableDoubleTapZooming: false,
+                      canShowPaginationDialog: false,
+                      canShowScrollHead: false, 
+                      canShowScrollStatus: false,
                       onDocumentLoaded: (details) {},
                     ),
                   ),
 
-                  // 2. Gesture Detector Layer (Screen Relative)
+                  // 2. Gesture Detector Layer
                   Positioned.fill(
                     child: GestureDetector(
                       behavior: HitTestBehavior.translucent,
@@ -479,8 +510,34 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       child: Container(color: Colors.transparent),
                     ),
                   ),
+                  // 3. Page Number Indicators (Per Page - Semi Circle Style)
+                  ...List.generate(doc.pageWidths.length, (index) {
+                    final double top = pagePixelOffsets[index];
+                    return Positioned(
+                      top: top + 15,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(10, 5, 2, 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.85),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            bottomLeft: Radius.circular(20),
+                          ),
+                        ),
+                        child: Text(
+                          '${index + 1} / ${doc.pageWidths.length}',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
 
-                  // 3. Document Fields Overlays
+                  // 4. Document Fields Overlays
                   ...doc.fields.where((PdfFieldEntity f) => f.isNewField).map((field) {
                     final int pIdx = field.pageIndex;
                     if (pIdx >= pageScales.length) return const SizedBox.shrink();
@@ -518,7 +575,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                     );
                   }),
 
-                  // 4. Pending Eraser Preview
+                  // 5. Pending Eraser Preview
                   EraserOverlay(
                     pageScales: pageScales,
                     pagePixelOffsets: pagePixelOffsets,
@@ -543,9 +600,6 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
             ),
           ),
         ),
-
-        // 2. B. SCREEN-STATIC OVERLAYS (NOT ZOOMABLE)
-        if (_zoom > 1.05)
           Positioned(
             bottom: 20,
             right: 20,

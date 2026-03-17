@@ -113,6 +113,39 @@ class RecentFilesService {
     await _save(files);
   }
 
+  /// Renames a file physically and updates the recent entries.
+  Future<String> renameFile(String oldPath, String newName) async {
+    final file = File(oldPath);
+    if (!await file.exists()) throw Exception('File not found');
+
+    final String dir = file.parent.path;
+    String finalNewName = newName;
+    if (!finalNewName.toLowerCase().endsWith('.pdf')) {
+      finalNewName = '$finalNewName.pdf';
+    }
+
+    final String newPath = '$dir/$finalNewName';
+    if (await File(newPath).exists()) {
+      throw Exception('File with this name already exists');
+    }
+
+    await file.rename(newPath);
+
+    final files = await getRecentFiles();
+    final idx = files.indexWhere((f) => f.filePath == oldPath);
+    if (idx != -1) {
+      files[idx] = RecentFileEntry(
+        filePath: newPath,
+        fileName: finalNewName,
+        lastOpened: files[idx].lastOpened,
+        hasDraft: files[idx].hasDraft,
+        isEdited: files[idx].isEdited,
+      );
+      await _save(files);
+    }
+    return newPath;
+  }
+
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);

@@ -116,10 +116,7 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
           icon: Icons.title_rounded,
           label: AppStrings.modeText,
           isActive: widget.activeMode == EditorMode.text,
-          onTap: () {
-            _toggleMode(EditorMode.text);
-            widget.onAddText();
-          },
+          onTap: () => _toggleMode(EditorMode.text),
         ),
         ToolbarButton(
           icon: Icons.auto_awesome_rounded,

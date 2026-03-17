@@ -41,6 +41,7 @@ class AppStrings {
   // Toast Messages
   static String get toastEraserActive => _s == 'id' ? 'Mode Penghapus Aktif. Ketuk teks manapun di PDF untuk menghapusnya.' : 'Eraser Mode Active. Tap any text on the PDF to wipe it.';
   static String get toastMarkerActive => _s == 'id' ? 'Mode Penanda Aktif. Ketuk PDF untuk menaruh penanda.' : 'Marker Mode Active. Tap on PDF to place a marker.';
+  static String get toastTextActive => _s == 'id' ? 'Mode Teks Aktif. Ketuk pada PDF untuk mulai menulis.' : 'Text Mode Active. Tap on the PDF to start typing.';
   static String get toastTextErased => _s == 'id' ? 'Teks Berhasil Dihapus Permanen!' : 'Text Erased Permanently!';
   static String get toastSaveSuccess => _s == 'id' ? 'Tersimpan sebagai ' : 'Saved as ';
   static String get toastSaveFailed => _s == 'id' ? 'Gagal menyimpan: ' : 'Save failed: ';
@@ -49,6 +50,9 @@ class AppStrings {
   static String get toastPreviewingErase => _s == 'id' ? 'Menampilkan pratinjau area yang akan dihapus...' : 'Previewing area to erase...';
   static String get fileDeleted => _s == 'id' ? 'File berhasil dihapus dari perangkat' : 'File deleted from device';
   static String get removedFromHistory => _s == 'id' ? 'Dihapus dari riwayat' : 'Removed from history';
+  static String get toastSelectFolder => _s == 'id' ? 'Silakan pilih folder penyimpanan terlebih dahulu!' : 'Please select a save folder first!';
+  static String get toastRenameSuccess => _s == 'id' ? 'File berhasil diubah namanya' : 'File renamed successfully';
+  static String get hintSwipeDelete => _s == 'id' ? 'Geser kiri untuk menghapus riwayat' : 'Swipe left to remove from history';
 
   // Dialogs
   static String get dialogAddText => _s == 'id' ? 'Tambah Teks' : 'Add Text';
@@ -105,7 +109,7 @@ class AppStrings {
   static String get fileNameHint => _s == 'id' ? 'contoh: dokumenKu.pdf' : 'e.g. myDocument.pdf';
   static String get chooseSaveFolder => _s == 'id' ? 'Pilih Folder Penyimpanan' : 'Choose Save Folder';
   static String get tapToChooseFolder => _s == 'id' ? 'Ketuk untuk memilih folder...' : 'Tap to choose folder...';
-  static String get noFolderSelectedWarning => _s == 'id' ? 'Tidak ada folder dipilih — akan disimpan ke penyimpanan aplikasi.' : 'No folder selected — will save to app storage.';
+  static String get noFolderSelectedError => _s == 'id' ? 'Wajib pilih folder tujuan agar file bisa ditemukan di File Manager HP.' : 'Must choose a destination folder so the file can be found in the Phone File Manager.';
 
   // Home Page Tabs
   static String get tabAll => _s == 'id' ? 'Semua' : 'All';
@@ -138,6 +142,9 @@ class AppStrings {
       : 'What would you like to do with "$name"?\n\nThis will also clear any saved draft states.';
   static String get removeFromHistory => _s == 'id' ? 'Hapus dari Riwayat' : 'Remove from History';
   static String get deleteFromDevice => _s == 'id' ? 'Hapus File dari Perangkat' : 'Delete File from Device';
+  static String get actionRename => _s == 'id' ? 'Ubah Nama' : 'Rename';
+  static String get dialogRenameTitle => _s == 'id' ? 'Ubah Nama File' : 'Rename File';
+  static String get dialogRenameHint => _s == 'id' ? 'Masukkan nama baru' : 'Enter new name';
   static String get couldNotDeleteFile => _s == 'id' ? 'Tidak bisa menghapus file: ' : 'Could not delete file: ';
 
   // New Audit Strings

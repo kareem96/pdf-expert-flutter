@@ -173,15 +173,22 @@ extension _PdfEditorActions on _PdfEditorPageState {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    AppStrings.noFolderSelectedWarning,
-                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8888AA)),
+                    AppStrings.noFolderSelectedError,
+                    style: GoogleFonts.inter(
+                      fontSize: 11, 
+                      color: Colors.redAccent.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
             ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppStrings.cancel)),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(AppStrings.save)),
+            ElevatedButton(
+              onPressed: selectedFolder == null ? null : () => Navigator.pop(ctx, true), 
+              child: Text(AppStrings.save),
+            ),
           ],
         ),
       ),
@@ -239,18 +246,9 @@ extension _PdfEditorActions on _PdfEditorPageState {
     );
   }
 
-  void _onAddTextFromToolbar(PdfDocumentEntity doc) async {
-    final spawn = _getSpawnPoints(doc);
-    final val = await _showTextEditorDialog();
-    if (val != null && val['action'] == 'save' && mounted) {
-      ref.read(pdfEditorProvider.notifier).addFreeText(
-        spawn['x'], spawn['y'], val['text'] as String, spawn['pageIndex'],
-        fontSize: val['fontSize'] as double,
-        textColor: val['color'] as String,
-        fontFamily: val['fontFamily'] as String,
-        isBold: val['isBold'] as bool,
-        isItalic: val['isItalic'] as bool,
-      );
+  void _onAddTextFromToolbar(PdfDocumentEntity doc) {
+    if (_activeMode == EditorMode.text) {
+      CustomToast.show(context, message: AppStrings.toastTextActive);
     }
   }
 
