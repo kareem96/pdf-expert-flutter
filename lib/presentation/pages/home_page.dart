@@ -189,7 +189,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       builder: (context) => Consumer(
         builder: (context, ref, child) {
           final themeMode = ref.watch(themeProvider);
-          // Watch language provider inside dialog agar ikut rebuild
           ref.watch(appStringsProvider);
 
           return AlertDialog(
@@ -239,8 +238,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch appStringsProvider agar seluruh HomePage rebuild saat bahasa berubah
     ref.watch(appStringsProvider);
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final pdfState = ref.watch(pdfEditorProvider);
 
     final searchedFiles = _recentFiles.where((f) {
       if (_searchQuery.isEmpty) return true;
@@ -344,7 +344,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                       )
                     : CustomScrollView(
                         slivers: [
-                          // ── Continue banner ───────────────────────────────
                           if (latestDraft != null) SliverToBoxAdapter(
                             child: _ContinueBanner(
                               entry: latestDraft,
@@ -352,7 +351,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          // ── Open New PDF button ───────────────────────────
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -391,7 +389,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          // ── Sticky Header (Search & Tabs) ──────────────────
                           if (_recentFiles.isNotEmpty)
                             SliverPersistentHeader(
                               pinned: true,
@@ -409,8 +406,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ),
                             ),
 
-                          // ── Swipe Hint ──────────────────────────────────
-                          if (filteredFiles.isNotEmpty) SliverToBoxAdapter(
+                          if (filteredFiles.isNotEmpty && screenWidth < 600) SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.only(top: 8, bottom: 4),
                               child: Center(
@@ -426,29 +422,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          // ── Recent list ───────────────────────────────────
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (ctx, i) => AnimationConfiguration.staggeredList(
-                                position: i,
-                                duration: const Duration(milliseconds: 375),
-                                child: SlideAnimation(
-                                  verticalOffset: 50.0,
-                                  child: FadeInAnimation(
-                                    child: _RecentFileTile(
-                                      entry: filteredFiles[i],
-                                      onTap: () => _onTapRecentFile(filteredFiles[i]),
-                                      onDismiss: () => _removeRecentFile(filteredFiles[i]),
-                                      onRename: () => _renameRecentFile(filteredFiles[i]),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              childCount: filteredFiles.length,
-                            ),
-                          ),
+                          _buildRecentContent(context, filteredFiles, screenWidth),
 
-                          // ── Empty states ─────────────────────────────────
                           if (_recentFiles.isNotEmpty && filteredFiles.isEmpty) SliverToBoxAdapter(
                             child: Center(
                               child: Padding(
@@ -495,9 +470,59 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
+
+  Widget _buildRecentContent(BuildContext context, List<RecentFileEntry> files, double screenWidth) {
+    final bool useGrid = screenWidth >= 600;
+    
+    if (useGrid) {
+      final int crossAxisCount = screenWidth > 900 ? 3 : 2;
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 0.9,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (ctx, i) => _RecentFileTile(
+              entry: files[i],
+              onTap: () => _onTapRecentFile(files[i]),
+              onDismiss: () => _removeRecentFile(files[i]),
+              onRename: () => _renameRecentFile(files[i]),
+              isGrid: true,
+            ),
+            childCount: files.length,
+          ),
+        ),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (ctx, i) => AnimationConfiguration.staggeredList(
+          position: i,
+          duration: const Duration(milliseconds: 375),
+          child: SlideAnimation(
+            verticalOffset: 50.0,
+            child: FadeInAnimation(
+              child: _RecentFileTile(
+                entry: files[i],
+                onTap: () => _onTapRecentFile(files[i]),
+                onDismiss: () => _removeRecentFile(files[i]),
+                onRename: () => _renameRecentFile(files[i]),
+                isGrid: false,
+              ),
+            ),
+          ),
+        ),
+        childCount: files.length,
+      ),
+    );
+  }
 }
 
-// ── Sticky Header Delegate ─────────────────────────────────────────────────────
 class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TextEditingController searchController;
   final String searchQuery;
@@ -517,13 +542,11 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   double get minExtent => 135.0;
-
   @override
   double get maxExtent => 135.0;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // Wrap in Consumer agar string di header ikut rebuild saat bahasa berubah
     return Consumer(
       builder: (context, ref, _) {
         ref.watch(appStringsProvider);
@@ -633,8 +656,6 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-
-// ── Continue Banner ────────────────────────────────────────────────────────────
 class _ContinueBanner extends ConsumerWidget {
   final RecentFileEntry entry;
   final VoidCallback onTap;
@@ -711,18 +732,19 @@ class _ContinueBanner extends ConsumerWidget {
   }
 }
 
-// ── Recent File Tile ───────────────────────────────────────────────────────────
 class _RecentFileTile extends ConsumerWidget {
   final RecentFileEntry entry;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
   final VoidCallback onRename;
+  final bool isGrid;
 
   const _RecentFileTile({
     required this.entry,
     required this.onTap,
     required this.onDismiss,
     required this.onRename,
+    required this.isGrid,
   });
 
   String _formatDate(DateTime dt) {
@@ -735,10 +757,137 @@ class _RecentFileTile extends ConsumerWidget {
     return DateFormat('d MMM y').format(dt);
   }
 
+  Future<bool> _showDeleteDialog(BuildContext context) async {
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.removeFile),
+        content: Text(AppStrings.removeFileBody(entry.fileName)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, 'cancel'), child: Text(AppStrings.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'history'),
+            child: Text(AppStrings.removeFromHistory),
+          ),
+          if (entry.isEdited)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'delete'),
+              child: Text(AppStrings.deleteFromDevice, style: const TextStyle(color: Colors.red)),
+            ),
+        ],
+      ),
+    );
+    return action == 'history' || action == 'delete';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(appStringsProvider);
     final thumbAsync = ref.watch(pdfThumbnailProvider(entry.filePath));
+
+    Widget content;
+    if (isGrid) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2E2E4A).withOpacity(0.3)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                ),
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: thumbAsync.when(
+                      data: (data) => data != null
+                          ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
+                          : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 40),
+                      loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      error: (_, __) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 40),
+                    ),
+                  ),
+                  Positioned(
+                    top: 4, right: 4,
+                    child: _buildPopMenu(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(entry.fileName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+          Text(_formatDate(entry.lastOpened),
+            style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888AA)),
+          ),
+        ],
+      );
+    } else {
+      content = ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [const Color(0xFF6C63FF).withOpacity(0.2), const Color(0xFF9B59B6).withOpacity(0.2)],
+            ),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1)),
+          ),
+          clipBehavior: Clip.hardEdge,
+          child: thumbAsync.when(
+            data: (data) => data != null
+                ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
+                : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
+            loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)),
+            error: (_, __) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
+          ),
+        ),
+        title: Text(entry.fileName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(_formatDate(entry.lastOpened),
+          style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8888AA)),
+        ),
+        trailing: _buildPopMenu(context),
+      );
+    }
+
+    final tile = Container(
+      margin: isGrid ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? (isGrid ? Colors.transparent : const Color(0xFF1E1E2E).withOpacity(0.5))
+            : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: isGrid ? null : Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF2E2E4A)
+              : Colors.grey.shade200,
+        ),
+        boxShadow: !isGrid && Theme.of(context).brightness == Brightness.light
+            ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]
+            : null,
+      ),
+      child: isGrid ? GestureDetector(onTap: onTap, child: content) : content,
+    );
+
+    if (isGrid) return tile;
 
     return Dismissible(
       key: ValueKey(entry.filePath),
@@ -749,157 +898,62 @@ class _RecentFileTile extends ConsumerWidget {
         color: Colors.red.withOpacity(0.2),
         child: const Icon(Icons.delete_outline, color: Colors.redAccent),
       ),
-      confirmDismiss: (_) async {
-        FocusManager.instance.primaryFocus?.unfocus();
+      confirmDismiss: (_) => _showDeleteDialog(context),
+      onDismissed: (_) => onDismiss(),
+      child: tile,
+    );
+  }
 
-        final action = await showDialog<String>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(AppStrings.removeFile),
-            content: Text(AppStrings.removeFileBody(entry.fileName)),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, 'cancel'), child: Text(AppStrings.cancel)),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, 'history'),
-                child: Text(AppStrings.removeFromHistory),
-              ),
-              if (entry.isEdited)
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, 'delete'),
-                  child: Text(AppStrings.deleteFromDevice, style: const TextStyle(color: Colors.red)),
-                ),
-            ],
-          ),
-        );
-
-        if (action == 'delete') {
+  Widget _buildPopMenu(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded, color: const Color(0xFF8888AA), size: isGrid ? 18 : 22),
+      padding: EdgeInsets.zero,
+      onSelected: (val) async {
+        if (val == 'rename') onRename();
+        if (val == 'delete') {
+          final confirmed = await _showDeleteDialog(context);
+          if (confirmed) onDismiss();
+        }
+        if (val == 'share') {
           try {
-            final file = File(entry.filePath);
-            if (await file.exists()) await file.delete();
-            if (context.mounted) {
-              CustomToast.show(context, message: AppStrings.fileDeleted);
-            }
-            return true;
+            await Share.shareXFiles([XFile(entry.filePath)], text: 'PDF Expert: ${entry.fileName}');
           } catch (e) {
-            if (context.mounted) {
-              CustomToast.show(context, message: AppStrings.couldNotDeleteFile + e.toString(), isError: true);
-            }
-            return false;
+            if (context.mounted) CustomToast.show(context, message: 'Share failed: $e', isError: true);
           }
         }
-
-        final isHistory = (action == 'history');
-        if (isHistory && context.mounted) {
-          CustomToast.show(context, message: AppStrings.removedFromHistory);
-        }
-        return isHistory;
       },
-      onDismissed: (_) => onDismiss(),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF1E1E2E).withOpacity(0.5)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF2E2E4A)
-                : Colors.grey.shade200,
-            width: 1,
-          ),
-          boxShadow: Theme.of(context).brightness == Brightness.light
-              ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]
-              : null,
-        ),
-        child: ListTile(
-          onTap: onTap,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [const Color(0xFF6C63FF).withOpacity(0.2), const Color(0xFF9B59B6).withOpacity(0.2)],
-              ),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            clipBehavior: Clip.hardEdge,
-            child: thumbAsync.when(
-              data: (data) => data != null
-                  ? Container(
-                      color: Colors.white,
-                      width: double.infinity,
-                      height: double.infinity,
-                      child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter),
-                    )
-                  : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
-              loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B80FF))),
-              error: (_, __) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
-            ),
-          ),
-          title: Text(entry.fileName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
-            ),
-          ),
-          subtitle: Text(_formatDate(entry.lastOpened),
-            style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8888AA)),
-          ),
-          trailing: PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8888AA), size: 22),
-            onSelected: (val) async {
-              if (val == 'rename') onRename();
-              if (val == 'share') {
-                try {
-                  final file = File(entry.filePath);
-                  if (await file.exists()) {
-                    await Share.shareXFiles([XFile(entry.filePath)], text: 'PDF Expert: ${entry.fileName}');
-                  } else {
-                    if (context.mounted) {
-                      CustomToast.show(context, message: 'File not found.', isError: true);
-                    }
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    CustomToast.show(context, message: 'Share failed: $e', isError: true);
-                  }
-                }
-              }
-            },
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: 'rename',
-                child: Row(
-                  children: [
-                    const Icon(Icons.edit_outlined, size: 18),
-                    const SizedBox(width: 10),
-                    Text(AppStrings.actionRename, style: const TextStyle(fontSize: 13)),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'share',
-                child: Row(
-                  children: [
-                    const Icon(Icons.share_outlined, size: 18),
-                    const SizedBox(width: 10),
-                    Text(AppStrings.modeShare, style: const TextStyle(fontSize: 13)),
-                  ],
-                ),
-              ),
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'rename',
+          child: Row(
+            children: [
+              const Icon(Icons.edit_outlined, size: 18),
+              const SizedBox(width: 10),
+              Text(AppStrings.actionRename, style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
-      ),
+        PopupMenuItem(
+          value: 'share',
+          child: Row(
+            children: [
+              const Icon(Icons.share_outlined, size: 18),
+              const SizedBox(width: 10),
+              Text(AppStrings.modeShare, style: const TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+              const SizedBox(width: 10),
+              Text(AppStrings.actionDelete, style: const TextStyle(fontSize: 13, color: Colors.redAccent)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

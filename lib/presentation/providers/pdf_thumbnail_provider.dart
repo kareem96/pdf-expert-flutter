@@ -9,8 +9,8 @@ final pdfThumbnailProvider = FutureProvider.family<Uint8List?, String>((ref, pat
     if (!await file.exists()) return null;
     
     final bytes = await file.readAsBytes();
-    // Use dpi 72 for a lightweight thumbnail
-    await for (final page in Printing.raster(bytes, pages: [0], dpi: 72)) {
+    // Use low DPI 30 for list view thumbnails to save memory and CPU
+    await for (final page in Printing.raster(bytes, pages: [0], dpi: 30)) {
       return await page.toPng();
     }
   } catch (e) {

@@ -6,34 +6,23 @@ extension _PdfEditorActions on _PdfEditorPageState {
 
   /// Calculates the [pdfX, pdfY, pageIndex] for the current center of the viewport
   Map<String, dynamic> _getSpawnPoints(PdfDocumentEntity doc) {
+    if (_cachedPagePixelOffsets.isEmpty) return {'x': 0.0, 'y': 0.0, 'pageIndex': 0};
     final size = MediaQuery.of(context).size;
+    final double zoom = _zoomNotifier.value;
     final double screenCenterX = _scrollX + (size.width / 2);
     final double screenCenterY = _scrollY + (size.height / 2);
 
-    double accumulatedHeight = 0;
     int pIdx = 0;
-    double pageScale = 1.0;
-
-    for (int i = 0; i < doc.pageWidths.length; i++) {
-      double s = (size.width / doc.pageWidths[i]);
-      if (s <= 0) s = 1.0;
-      
-      if (screenCenterY >= (accumulatedHeight * _zoom)) {
-        pIdx = i;
-        pageScale = s;
-      }
-      accumulatedHeight += doc.pageHeights[i] * s;
+    for (int i = 0; i < _cachedPagePixelOffsets.length; i++) {
+        if (screenCenterY >= (_cachedPagePixelOffsets[i] * zoom)) {
+            pIdx = i;
+        }
     }
 
-    final double totalScale = pageScale * _zoom;
+    final double pageScale = _cachedPageScales[pIdx];
+    final double totalScale = pageScale * zoom;
     final double pdfX = screenCenterX / totalScale;
-
-    double tempH = 0;
-    for (int i = 0; i < pIdx; i++) {
-      double s = (size.width / doc.pageWidths[i]);
-      tempH += doc.pageHeights[i] * s;
-    }
-    final double pageStartPx = tempH * _zoom;
+    final double pageStartPx = _cachedPagePixelOffsets[pIdx] * zoom;
     final double pdfY = (screenCenterY - pageStartPx) / totalScale;
 
     return {'x': pdfX, 'y': pdfY, 'pageIndex': pIdx};
