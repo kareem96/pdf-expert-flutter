@@ -130,4 +130,19 @@ class AppStrings {
   static String get removeFromHistory => _s == 'id' ? 'Hapus dari Riwayat' : 'Remove from History';
   static String get deleteFromDevice => _s == 'id' ? 'Hapus File dari Perangkat' : 'Delete File from Device';
   static String get couldNotDeleteFile => _s == 'id' ? 'Tidak bisa menghapus file: ' : 'Could not delete file: ';
+
+  // New Audit Strings
+  static String get error => _s == 'id' ? 'Kesalahan' : 'Error';
+  static String get page => _s == 'id' ? 'Halaman' : 'Page';
+  static String get standardA4 => _s == 'id' ? 'Standar A4' : 'Standard A4';
+  static String get selectColor => _s == 'id' ? 'Pilih Warna' : 'Select Color';
+  static String get docNotFound => _s == 'id' ? 'Dokumen tidak ditemukan' : 'Document not found';
+  static String get langIndo => '🇮🇩 Indo';
+  static String get langEnglish => '🇺🇸 English';
+  static String get labelDraft => _s == 'id' ? 'Draf' : 'Draft';
+  static String get deletePageTitle => _s == 'id' ? 'Hapus Halaman?' : 'Delete Page?';
+  static String deletePageContent(int index) => _s == 'id' 
+      ? 'Apakah Anda yakin ingin menghapus Halaman $index?' 
+      : 'Are you sure you want to delete Page $index?';
+  static String get cannotDeleteLastPage => _s == 'id' ? 'Tidak bisa menghapus halaman terakhir' : 'Cannot delete the last page';
 }

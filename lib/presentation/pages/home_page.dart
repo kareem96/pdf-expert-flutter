@@ -172,8 +172,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                     value: AppStrings.currentLanguage,
                     underline: const SizedBox(),
                     items: const [
-                      DropdownMenuItem(value: 'id', child: Text('🇮🇩 Indo')),
-                      DropdownMenuItem(value: 'en', child: Text('🇺🇸 English')),
+                      DropdownMenuItem(value: 'id', child: Text(AppStrings.langIndo)),
+                      DropdownMenuItem(value: 'en', child: Text(AppStrings.langEnglish)),
                     ],
                     onChanged: (val) {
                       if (val != null) {
@@ -824,7 +824,7 @@ class _RecentFileTile extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.3), blurRadius: 4)],
                   ),
-                  child: Text('Draft',
+                  child: Text(AppStrings.labelDraft,
                     style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                 )

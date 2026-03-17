@@ -211,7 +211,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           if (doc == null) {
             return Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              body: const Center(child: Text('Document not found', style: TextStyle(color: Colors.white))),
+              body: Center(child: Text(AppStrings.docNotFound, style: const TextStyle(color: Colors.white))),
             );
           }
          
@@ -303,7 +303,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
         error: (err, stack) => Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Center(
-            child: Text('Error: $err', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text('${AppStrings.error}: $err', style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ),
       ),

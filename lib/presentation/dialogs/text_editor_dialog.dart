@@ -93,7 +93,7 @@ class _TextEditorDialogState extends State<TextEditorDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Font Size: ${currentFontSize.toInt()}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                      Text('${AppStrings.dialogSize} ${currentFontSize.toInt()}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
                       Slider(
                         value: currentFontSize,
                         min: 8,
@@ -108,7 +108,7 @@ class _TextEditorDialogState extends State<TextEditorDialog> {
                     showDialog(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('Select Color'),
+                        title: Text(AppStrings.selectColor),
                         content: SingleChildScrollView(
                           child: BlockPicker(
                             pickerColor: Color(int.parse(currentColor)),
@@ -163,11 +163,11 @@ class _TextEditorDialogState extends State<TextEditorDialog> {
                 if (widget.isEdit)
                    TextButton(
                      onPressed: () => Navigator.pop(context, {'action': 'delete'}),
-                     child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                     child: Text(AppStrings.delete, style: const TextStyle(color: Colors.red)),
                    ),
                 TextButton(
                   onPressed: () => Navigator.pop(context), 
-                  child: const Text('Cancel')
+                  child: Text(AppStrings.cancel)
                 ),
                 ElevatedButton(
                   onPressed: () {

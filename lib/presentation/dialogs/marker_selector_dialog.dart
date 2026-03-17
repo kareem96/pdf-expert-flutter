@@ -121,11 +121,11 @@ class _MarkerSelectorDialogState extends State<MarkerSelectorDialog> {
         if (widget.isEdit)
           TextButton(
             onPressed: () => Navigator.pop(context, {'action': 'delete'}),
-            child: const Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+            child: Text(AppStrings.delete, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel', style: TextStyle(color: Colors.white60, fontSize: 13)),
+          child: Text(AppStrings.cancel, style: const TextStyle(color: Colors.white60, fontSize: 13)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(

@@ -57,7 +57,7 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
       body: state.isLoading 
         ? const Center(child: CircularProgressIndicator(color: Color(0xFF6C63FF)))
         : state.error != null
-          ? Center(child: Text('Error: ${state.error}', style: const TextStyle(color: Colors.redAccent)))
+          ? Center(child: Text('${AppStrings.error}: ${state.error}', style: const TextStyle(color: Colors.redAccent)))
           : ReorderableListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: state.thumbnails.length,
@@ -97,8 +97,8 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
             ),
           ),
         ),
-        title: Text('Page ${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        subtitle: const Text('Standard A4', style: TextStyle(color: Colors.white54, fontSize: 12)),
+        title: Text('${AppStrings.page} ${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: Text(AppStrings.standardA4, style: const TextStyle(color: Colors.white54, fontSize: 12)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -124,7 +124,7 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
     if (ref.read(pageManagerProvider).thumbnails.length <= 1) {
       CustomToast.show(
         context, 
-        message: 'Cannot delete the last page', 
+        message: AppStrings.cannotDeleteLastPage, 
         isError: true,
       );
       return;
@@ -133,16 +133,16 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text('Delete Page?', style: TextStyle(color: Colors.white)),
-        content: Text('Are you sure you want to delete Page ${index + 1}?', style: const TextStyle(color: Colors.white70)),
+        title: Text(AppStrings.deletePageTitle, style: const TextStyle(color: Colors.white)),
+        content: Text(AppStrings.deletePageContent(index + 1), style: const TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.cancel)),
           TextButton(
             onPressed: () {
               ref.read(pageManagerProvider.notifier).deletePage(index);
               Navigator.pop(ctx);
             }, 
-            child: const Text('Delete', style: TextStyle(color: Colors.redAccent))
+            child: Text(AppStrings.delete, style: const TextStyle(color: Colors.redAccent))
           ),
         ],
       ),
