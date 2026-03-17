@@ -145,4 +145,5 @@ class AppStrings {
       ? 'Apakah Anda yakin ingin menghapus Halaman $index?' 
       : 'Are you sure you want to delete Page $index?';
   static String get cannotDeleteLastPage => _s == 'id' ? 'Tidak bisa menghapus halaman terakhir' : 'Cannot delete the last page';
+  static String get byKDevLab => 'by K-Dev Lab';
 }

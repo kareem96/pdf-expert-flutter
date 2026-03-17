@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'presentation/pages/home_page.dart';
+import 'presentation/pages/splash_page.dart';
 import 'presentation/providers/app_theme_provider.dart';
 import 'presentation/providers/app_language_provider.dart';
 import 'presentation/theme/app_theme.dart';
@@ -33,7 +33,7 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       locale: locale,
-      home: const HomePage(),
+      home: const SplashPage(),
     );
   }
 }

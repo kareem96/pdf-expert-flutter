@@ -171,7 +171,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   trailing: DropdownButton<String>(
                     value: AppStrings.currentLanguage,
                     underline: const SizedBox(),
-                    items: const [
+                    items: [
                       DropdownMenuItem(value: 'id', child: Text(AppStrings.langIndo)),
                       DropdownMenuItem(value: 'en', child: Text(AppStrings.langEnglish)),
                     ],
