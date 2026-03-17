@@ -155,7 +155,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         title: Text(AppStrings.dialogRenameTitle),
         content: TextField(
           controller: controller,
-          autoFocus: true,
+          autofocus: true,
           decoration: InputDecoration(
             hintText: AppStrings.dialogRenameHint,
             suffixText: '.pdf',
@@ -858,7 +858,6 @@ class _RecentFileTile extends ConsumerWidget {
             icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8888AA), size: 22),
             onSelected: (val) async {
               if (val == 'rename') onRename();
-              if (val == 'delete') onDismiss();
               if (val == 'share') {
                 try {
                   final file = File(entry.filePath);
@@ -894,16 +893,6 @@ class _RecentFileTile extends ConsumerWidget {
                     const Icon(Icons.share_outlined, size: 18),
                     const SizedBox(width: 10),
                     Text(AppStrings.modeShare, style: const TextStyle(fontSize: 13)),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
-                    const SizedBox(width: 10),
-                    Text(AppStrings.delete, style: const TextStyle(fontSize: 13, color: Colors.redAccent)),
                   ],
                 ),
               ),
