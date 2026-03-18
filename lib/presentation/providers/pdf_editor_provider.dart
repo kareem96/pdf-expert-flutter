@@ -77,6 +77,14 @@ class PdfEditor extends _$PdfEditor {
 
 
 
+  void clearNewFields() {
+    state.whenData((doc) {
+      if (doc == null) return;
+      final filtered = doc.fields.where((f) => !f.isNewField).toList();
+      state = AsyncValue.data(doc.copyWith(fields: filtered));
+    });
+  }
+
   void updateField(String identifier, String value) {
     state.whenData((doc) {
       if (doc == null) return;

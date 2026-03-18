@@ -517,6 +517,8 @@ extension _PdfEditorActions on _PdfEditorPageState {
       _update(() => _isProcessingPages = true);
       try {
         await ref.read(pdfEditorProvider.notifier).applyPageActions(result);
+        _resetView(); // Reset zoom and scroll to prevent cropping issues
+        _lastDocFilePath = null; // Force LayoutBuilder to recalculate on next frame
         if (mounted) {
           CustomToast.show(context, message: AppStrings.toastPagesUpdated);
         }

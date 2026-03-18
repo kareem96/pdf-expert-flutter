@@ -55,7 +55,7 @@ class PdfPageService {
             if (index < pageIndices.length) {
               final int originalIdx = pageIndices[index];
               final int currentRot = pageRotations[originalIdx] ?? 0;
-              pageRotations[originalIdx] = (currentRot + angleDelta) % 360;
+              pageRotations[originalIdx] = _normalizeDegrees(currentRot + angleDelta);
             }
             break;
             
@@ -75,37 +75,18 @@ class PdfPageService {
 
         final int originalRotation = _mapPdfRotation(sourcePage.rotation);
         final int actionRotation = pageRotations[originalIdx] ?? 0;
-        final int totalRotation = (originalRotation + actionRotation) % 360;
+        final int totalRotation = _normalizeDegrees(originalRotation + actionRotation);
 
-        final Size originalSize = sourcePage.size;
         final PdfTemplate template = sourcePage.createTemplate();
-
-        // For 90° or 270°, page dimensions flip (portrait <-> landscape)
-        final bool isDimensionSwapped = (totalRotation == 90 || totalRotation == 270);
-        final Size finalSize = isDimensionSwapped
-            ? Size(originalSize.height, originalSize.width)
-            : originalSize;
+        final Size originalSize = sourcePage.size;
 
         final PdfSection section = targetDocument.sections!.add();
         section.pageSettings.margins.all = 0;
-        section.pageSettings.size = finalSize;
+        section.pageSettings.size = originalSize;
+        section.pageSettings.rotate = _mapRotation(totalRotation);
 
         final PdfPage destinationPage = section.pages.add();
-        final PdfGraphics gfx = destinationPage.graphics;
-
-        gfx.save();
-        if (totalRotation == 90) {
-          gfx.translateTransform(originalSize.height, 0);
-          gfx.rotateTransform(90);
-        } else if (totalRotation == 180) {
-          gfx.translateTransform(originalSize.width, originalSize.height);
-          gfx.rotateTransform(180);
-        } else if (totalRotation == 270) {
-          gfx.translateTransform(0, originalSize.width);
-          gfx.rotateTransform(270);
-        }
-        gfx.drawPdfTemplate(template, Offset.zero, originalSize);
-        gfx.restore();
+        destinationPage.graphics.drawPdfTemplate(template, Offset.zero, originalSize);
       }
 
       final List<int> bytes = await targetDocument.save();
@@ -131,8 +112,13 @@ class PdfPageService {
     }
   }
 
-  PdfPageRotateAngle _mapRotation(int degrees) {
+  int _normalizeDegrees(int degrees) {
     final int normalized = degrees % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
+  }
+
+  PdfPageRotateAngle _mapRotation(int degrees) {
+    final int normalized = _normalizeDegrees(degrees);
     if (normalized == 90) return PdfPageRotateAngle.rotateAngle90;
     if (normalized == 180) return PdfPageRotateAngle.rotateAngle180;
     if (normalized == 270) return PdfPageRotateAngle.rotateAngle270;

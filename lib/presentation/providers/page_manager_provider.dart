@@ -96,6 +96,22 @@ class PageManager extends _$PageManager {
     state = state.copyWith(rotations: rotations, pendingActions: actions);
   }
 
+  void rotateAllPages(int angleDelta) {
+    final rotations = List<int>.from(state.rotations);
+    final actions = List<PageAction>.from(state.pendingActions);
+    
+    for (int i = 0; i < rotations.length; i++) {
+      rotations[i] = (rotations[i] + angleDelta) % 360;
+      actions.add(PageAction(
+        pageIndex: i,
+        type: PageActionType.rotate,
+        value: angleDelta,
+      ));
+    }
+    
+    state = state.copyWith(rotations: rotations, pendingActions: actions);
+  }
+
   void deletePage(int index) {
     if (state.thumbnails.length <= 1) return;
     

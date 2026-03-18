@@ -66,6 +66,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   List<double> _cachedPageScales = [];
   double _cachedTotalDocHeight = 0;
   Size? _lastConstraintsSize;
+  String? _lastDocFilePath;
 
   EditorMode _activeMode = EditorMode.none;
   String _activeAiTool = 'erase';
@@ -274,9 +275,10 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       builder: (context, constraints) {
                         final size = Size(constraints.maxWidth, constraints.maxHeight);
                         
-                        // Only recalculate if constraints change or first time
-                        if (_lastConstraintsSize != size || _cachedPagePixelOffsets.isEmpty) {
+                        // Recalculate if constraints change, first time, OR if file changed (after page actions)
+                        if (_lastConstraintsSize != size || _cachedPagePixelOffsets.isEmpty || _lastDocFilePath != doc.filePath) {
                           _lastConstraintsSize = size;
+                          _lastDocFilePath = doc.filePath;
                           _cachedPagePixelOffsets = [];
                           _cachedPageScales = [];
                           _cachedTotalDocHeight = 0;
@@ -318,6 +320,50 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
                     ),
                   ),
+                Positioned(
+                  bottom: 80,
+                  right: 20,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _resetView,
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF6C63FF), Color(0xFF8B80FF)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.aspect_ratio_rounded, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              AppStrings.resetView,
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             bottomNavigationBar: _activeMode == EditorMode.aiTools 
@@ -602,50 +648,6 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                         CustomToast.show(context, message: AppStrings.toastTextErased);
                       }
                     },
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    right: 20,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _resetView,
-                        borderRadius: BorderRadius.circular(30),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6C63FF), Color(0xFF8B80FF)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.aspect_ratio_rounded, color: Colors.white, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                AppStrings.resetView,
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
                   ),
                 ],
               ),
