@@ -85,15 +85,18 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 60,
-          height: 80,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            image: DecorationImage(
-              image: MemoryImage(thumbData),
-              fit: BoxFit.contain,
+        leading: RotatedBox(
+          quarterTurns: (state.rotations[index] / 90).round(),
+          child: Container(
+            width: 60,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+              image: DecorationImage(
+                image: MemoryImage(thumbData),
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),

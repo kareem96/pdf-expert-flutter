@@ -8,12 +8,14 @@ part 'page_manager_provider.g.dart';
 
 class PageManagerState {
   final List<Uint8List> thumbnails;
+  final List<int> rotations; // Track visual rotation for each thumbnail
   final List<PageAction> pendingActions;
   final bool isLoading;
   final String? error;
 
   PageManagerState({
     this.thumbnails = const [],
+    this.rotations = const [],
     this.pendingActions = const [],
     this.isLoading = false,
     this.error,
@@ -21,12 +23,14 @@ class PageManagerState {
 
   PageManagerState copyWith({
     List<Uint8List>? thumbnails,
+    List<int>? rotations,
     List<PageAction>? pendingActions,
     bool? isLoading,
     String? error,
   }) {
     return PageManagerState(
       thumbnails: thumbnails ?? this.thumbnails,
+      rotations: rotations ?? this.rotations,
       pendingActions: pendingActions ?? this.pendingActions,
       isLoading: isLoading ?? this.isLoading,
       error: error,
@@ -46,7 +50,11 @@ class PageManager extends _$PageManager {
     try {
       final repo = ref.read(pdfRepositoryProvider);
       final thumbnails = await repo.getThumbnails(path);
-      state = state.copyWith(thumbnails: thumbnails, isLoading: false);
+      state = state.copyWith(
+        thumbnails: thumbnails, 
+        rotations: List.generate(thumbnails.length, (_) => 0),
+        isLoading: false
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -58,6 +66,10 @@ class PageManager extends _$PageManager {
     final thumbnails = List<Uint8List>.from(state.thumbnails);
     final page = thumbnails.removeAt(oldIndex);
     thumbnails.insert(newIndex, page);
+
+    final rotations = List<int>.from(state.rotations);
+    final rot = rotations.removeAt(oldIndex);
+    rotations.insert(newIndex, rot);
     
     final actions = List<PageAction>.from(state.pendingActions);
     actions.add(PageAction(
@@ -66,19 +78,22 @@ class PageManager extends _$PageManager {
       value: newIndex,
     ));
     
-    state = state.copyWith(thumbnails: thumbnails, pendingActions: actions);
+    state = state.copyWith(thumbnails: thumbnails, rotations: rotations, pendingActions: actions);
   }
 
   void rotatePage(int index, int angleDelta) {
-    // Note: We don't visually rotate thumbnails here for simplicity (though we could)
-    // We just track the action.
+    // 1. Update visual rotation
+    final rotations = List<int>.from(state.rotations);
+    rotations[index] = (rotations[index] + angleDelta) % 360;
+
+    // 2. Track action
     final actions = List<PageAction>.from(state.pendingActions);
     actions.add(PageAction(
       pageIndex: index,
       type: PageActionType.rotate,
       value: angleDelta,
     ));
-    state = state.copyWith(pendingActions: actions);
+    state = state.copyWith(rotations: rotations, pendingActions: actions);
   }
 
   void deletePage(int index) {
@@ -86,6 +101,9 @@ class PageManager extends _$PageManager {
     
     final thumbnails = List<Uint8List>.from(state.thumbnails);
     thumbnails.removeAt(index);
+
+    final rotations = List<int>.from(state.rotations);
+    rotations.removeAt(index);
     
     final actions = List<PageAction>.from(state.pendingActions);
     actions.add(PageAction(
@@ -93,6 +111,6 @@ class PageManager extends _$PageManager {
       type: PageActionType.delete,
     ));
     
-    state = state.copyWith(thumbnails: thumbnails, pendingActions: actions);
+    state = state.copyWith(thumbnails: thumbnails, rotations: rotations, pendingActions: actions);
   }
 }

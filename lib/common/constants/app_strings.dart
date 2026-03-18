@@ -143,6 +143,7 @@ class AppStrings {
   static String get removeFromHistory => _s == 'id' ? 'Hapus dari Riwayat' : 'Remove from History';
   static String get deleteFromDevice => _s == 'id' ? 'Hapus File dari Perangkat' : 'Delete File from Device';
   static String get actionRename => _s == 'id' ? 'Ubah Nama' : 'Rename';
+  static String get actionDelete => _s == 'id' ? 'Hapus' : 'Delete';
   static String get dialogRenameTitle => _s == 'id' ? 'Ubah Nama File' : 'Rename File';
   static String get dialogRenameHint => _s == 'id' ? 'Masukkan nama baru' : 'Enter new name';
   static String get couldNotDeleteFile => _s == 'id' ? 'Tidak bisa menghapus file: ' : 'Could not delete file: ';

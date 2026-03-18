@@ -2,10 +2,17 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
+import '../../data/services/draft_service.dart';
 
 final pdfThumbnailProvider = FutureProvider.family<Uint8List?, String>((ref, path) async {
   try {
-    final file = File(path);
+    String finalPath = path;
+    final draftPath = await DraftService().getDraftPdfPath(path);
+    if (draftPath != null && await File(draftPath).exists()) {
+      finalPath = draftPath;
+    }
+
+    final file = File(finalPath);
     if (!await file.exists()) return null;
     
     final bytes = await file.readAsBytes();

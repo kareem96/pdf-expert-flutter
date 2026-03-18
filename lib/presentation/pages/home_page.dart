@@ -84,8 +84,13 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       if (restoreDraft) {
         final draftFields = await _draftService.loadDraft(path);
+        final draftPdfPath = await _draftService.getDraftPdfPath(path);
         if (mounted) {
-          await ref.read(pdfEditorProvider.notifier).loadPdf(path, draftFields: draftFields);
+          await ref.read(pdfEditorProvider.notifier).loadPdf(
+            draftPdfPath ?? path, 
+            originalPath: path,
+            draftFields: draftFields
+          );
         }
       } else {
         await ref.read(pdfEditorProvider.notifier).loadPdf(path);

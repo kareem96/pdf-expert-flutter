@@ -109,19 +109,19 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
               decoration: BoxDecoration(
                 color: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
                     ? Colors.transparent 
-                    : (isEraser ? _parseColor(widget.field.backgroundColor ?? '0xFFFFFFFF') : Theme.of(context).colorScheme.onSurface.withOpacity(0.05)),
+                    : (isEraser ? _parseColor(widget.field.backgroundColor ?? '0xFFFFFFFF') : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05)),
                 border: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
                     ? null
                     : isEraser 
-                      ? Border.all(color: Colors.grey.withOpacity(0.5), width: 1)
+                      ? Border.all(color: Colors.grey.withValues(alpha: 0.5), width: 1)
                       : Border.all(
-                          color: Colors.blue.withOpacity(0.8), 
+                          color: Colors.blue.withValues(alpha: 0.8), 
                           width: 1.5, 
                         ),
                 borderRadius: BorderRadius.circular(2),
                 boxShadow: isEraser ? null : [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     blurRadius: 4,
                   ),
                 ],
@@ -136,7 +136,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                         )
                       : const SizedBox.shrink()
                     : isEraser
-                        ? Container(
+                        ? SizedBox(
                             width: currentWidth,
                             height: currentHeight,
                           )
@@ -165,7 +165,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                                     borderRadius: BorderRadius.circular(4),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
+                                        color: Colors.black.withValues(alpha: 0.15),
                                         blurRadius: 6,
                                         offset: const Offset(2, 4),
                                       ),
@@ -196,7 +196,9 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                 onPanUpdate: (details) {
                   setState(() {
                     _resizeDw += details.delta.dx;
-                    _resizeDh += details.delta.dy;
+                    // Lock aspect ratio: newHeight = newWidth * (originalHeight / originalWidth)
+                    final ratio = widget.field.height / widget.field.width;
+                    _resizeDh = _resizeDw * ratio;
                   });
                 },
                 onPanEnd: (details) {
@@ -212,7 +214,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.blue, width: 2),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4),
                       ],
                     ),
                     child: const Icon(Icons.open_in_full, size: 16, color: Colors.blue),

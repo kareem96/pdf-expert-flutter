@@ -50,13 +50,15 @@ class PdfEditor extends _$PdfEditor {
     state = AsyncValue.data(_history[_historyIndex]);
   }
 
-  Future<void> loadPdf(String path, {List<PdfFieldEntity>? draftFields}) async {
+  Future<void> loadPdf(String path, {String? originalPath, List<PdfFieldEntity>? draftFields}) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(pdfRepositoryProvider);
       final doc = await LoadPdfUseCase(repository).call(path);
       
-      PdfDocumentEntity finalDoc = doc;
+      PdfDocumentEntity finalDoc = doc.copyWith(
+        originalPath: originalPath ?? doc.originalPath,
+      );
 
       if (draftFields != null && draftFields.isNotEmpty) {
         finalDoc = finalDoc.copyWith(
@@ -317,7 +319,7 @@ class PdfEditor extends _$PdfEditor {
     });
   }
 
-  void addImage(double x, double y, String imagePath, int pageIndex, {bool isSignature = false}) {
+  void addImage(double x, double y, String imagePath, int pageIndex, {bool isSignature = false, double? width, double? height}) {
     state.whenData((doc) {
       if (doc == null) return;
       
@@ -329,8 +331,8 @@ class PdfEditor extends _$PdfEditor {
         value: imagePath, // Menyimpan file path lokal ke dalam value
         x: x,
         y: y,
-        width: 150, // default image width
-        height: 150, // default image height (can be resized later if needed)
+        width: width ?? 150, // default or custom image width
+        height: height ?? 150, // default or custom image height
         pageIndex: pageIndex,
         isModified: true,
         isNewField: true,
@@ -416,7 +418,7 @@ class PdfEditor extends _$PdfEditor {
       
       // 1. Apply page structure changes to the file
       final modifiedFile = await repository.applyPageChanges(
-        sourcePath: doc.originalPath,
+        sourcePath: doc.filePath,
         actions: actions,
       );
       
@@ -499,7 +501,11 @@ class PdfEditor extends _$PdfEditor {
         );
       }).whereType<PdfFieldEntity>().toList();
       
-      final finalDoc = newDocBase.copyWith(fields: updatedFields);
+      final finalDoc = newDocBase.copyWith(
+        originalPath: doc.originalPath,
+        fields: updatedFields, 
+        isModified: true
+      );
 
       // Update history
       _history.clear();

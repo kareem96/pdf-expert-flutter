@@ -72,35 +72,40 @@ class PdfPageService {
       for (int i = 0; i < pageIndices.length; i++) {
         final int originalIdx = pageIndices[i];
         final PdfPage sourcePage = sourceDocument.pages[originalIdx];
-        
-        // 1. Get original rotation and size (unrotated)
-        final int originalRotationValue = _mapPdfRotation(sourcePage.rotation);
-        final Size pageSize = sourcePage.size; // Physical unrotated size
-        
-        // 2. Create a specific section for this page to preserve its size/settings independently
+
+        final int originalRotation = _mapPdfRotation(sourcePage.rotation);
+        final int actionRotation = pageRotations[originalIdx] ?? 0;
+        final int totalRotation = (originalRotation + actionRotation) % 360;
+
+        final Size originalSize = sourcePage.size;
+        final PdfTemplate template = sourcePage.createTemplate();
+
+        // For 90° or 270°, page dimensions flip (portrait <-> landscape)
+        final bool isDimensionSwapped = (totalRotation == 90 || totalRotation == 270);
+        final Size finalSize = isDimensionSwapped
+            ? Size(originalSize.height, originalSize.width)
+            : originalSize;
+
         final PdfSection section = targetDocument.sections!.add();
         section.pageSettings.margins.all = 0;
-        section.pageSettings.size = pageSize;
-        
-        // 3. Create the page in this section
+        section.pageSettings.size = finalSize;
+
         final PdfPage destinationPage = section.pages.add();
-        
-        // 4. Draw the source page content onto the destination page
-        // createTemplate captures the physical page as-is (unrotated).
-        // Since the destination page size matches perfectly, Offset.zero is exactly top-left.
-        destinationPage.graphics.drawPdfTemplate(
-          sourcePage.createTemplate(),
-          Offset.zero,
-          pageSize,
-        );
-        
-        // 5. Calculate final cumulative rotation
-        final int actionRotation = pageRotations[originalIdx] ?? 0;
-        final int finalRotation = (originalRotationValue + actionRotation) % 360;
-        
-        if (finalRotation != 0) {
-          destinationPage.rotation = _mapRotation(finalRotation);
+        final PdfGraphics gfx = destinationPage.graphics;
+
+        gfx.save();
+        if (totalRotation == 90) {
+          gfx.translateTransform(originalSize.height, 0);
+          gfx.rotateTransform(90);
+        } else if (totalRotation == 180) {
+          gfx.translateTransform(originalSize.width, originalSize.height);
+          gfx.rotateTransform(180);
+        } else if (totalRotation == 270) {
+          gfx.translateTransform(0, originalSize.width);
+          gfx.rotateTransform(270);
         }
+        gfx.drawPdfTemplate(template, Offset.zero, originalSize);
+        gfx.restore();
       }
 
       final List<int> bytes = await targetDocument.save();

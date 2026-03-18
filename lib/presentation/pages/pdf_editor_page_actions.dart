@@ -33,8 +33,22 @@ extension _PdfEditorActions on _PdfEditorPageState {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       final spawn = _getSpawnPoints(doc);
+      final permanentPath = await _saveAssetToPermanentStorage(image.path);
+      
+      // Calculate original aspect ratio
+      final bytes = await File(image.path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final double originalW = frame.image.width.toDouble();
+      final double originalH = frame.image.height.toDouble();
+      final double ratio = originalW / originalH;
+      
+      double targetW = 150.0;
+      double targetH = 150.0 / ratio;
+
       ref.read(pdfEditorProvider.notifier).addImage(
-        spawn['x'], spawn['y'], image.path, spawn['pageIndex'], isSignature: false
+        spawn['x'], spawn['y'], permanentPath, spawn['pageIndex'], 
+        isSignature: false, width: targetW, height: targetH
       );
     }
   }
@@ -74,16 +88,23 @@ extension _PdfEditorActions on _PdfEditorPageState {
                  if (signatureController.isEmpty) return;
                  final signatureBytes = await signatureController.toPngBytes();
                  if (signatureBytes == null) return;
-                 
-                 final tempDir = await getTemporaryDirectory();
-                 final file = await File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png').create();
-                 file.writeAsBytesSync(signatureBytes);
-                 final spawn = _getSpawnPoints(doc);
-                 ref.read(pdfEditorProvider.notifier).addImage(
-                   spawn['x'], spawn['y'], file.path, spawn['pageIndex'], isSignature: true
-                 );
-                 Navigator.pop(context);
-               },
+                                  final tempDir = await getTemporaryDirectory();
+                  final tempFile = await File('${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png').create();
+                  tempFile.writeAsBytesSync(signatureBytes);
+                  
+                  final permanentPath = await _saveAssetToPermanentStorage(tempFile.path);
+                  
+                  // Signature canvas is 300x200 (Ratio 1.5)
+                  double targetW = 150.0;
+                  double targetH = 100.0; // Fixed ratio 1.5
+
+                  final spawn = _getSpawnPoints(doc);
+                  ref.read(pdfEditorProvider.notifier).addImage(
+                    spawn['x'], spawn['y'], permanentPath, spawn['pageIndex'], 
+                    isSignature: true, width: targetW, height: targetH
+                  );
+                  Navigator.pop(context);
+                },
                child: Text(AppStrings.add),
              ),
            ],
@@ -493,8 +514,35 @@ extension _PdfEditorActions on _PdfEditorPageState {
     );
 
     if (result != null && result.isNotEmpty) {
-      ref.read(pdfEditorProvider.notifier).applyPageActions(result);
-      CustomToast.show(context, message: AppStrings.toastPagesUpdated);
+      _update(() => _isProcessingPages = true);
+      try {
+        await ref.read(pdfEditorProvider.notifier).applyPageActions(result);
+        if (mounted) {
+          CustomToast.show(context, message: AppStrings.toastPagesUpdated);
+        }
+      } finally {
+        _update(() => _isProcessingPages = false);
+      }
     }
+  }
+
+  /// Copies a file from a temporary location to a permanent application directory
+  /// to ensure it persists across sessions and isn't cleared by the OS.
+  Future<String> _saveAssetToPermanentStorage(String tempPath) async {
+    final file = File(tempPath);
+    if (!await file.exists()) return tempPath;
+
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final pickedAssetsDir = Directory('${appDocDir.path}/picked_assets');
+    
+    if (!await pickedAssetsDir.exists()) {
+      await pickedAssetsDir.create(recursive: true);
+    }
+
+    final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${tempPath.split('/').last}';
+    final String permanentPath = '${pickedAssetsDir.path}/$fileName';
+    
+    await file.copy(permanentPath);
+    return permanentPath;
   }
 }

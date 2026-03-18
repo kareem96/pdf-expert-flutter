@@ -19,25 +19,43 @@ class DraftService {
     return dir;
   }
 
-  /// A stable filename key derived from the original PDF path.
   String _draftFileName(String pdfFilePath) {
-    // Simple: replace path separators and dots with underscores
     final safe = pdfFilePath
         .replaceAll(RegExp(r'[/\\:*?"<>|]'), '_')
         .replaceAll('.', '_');
     return '$safe.draft.json';
   }
 
-  /// Save the current overlay fields as a draft JSON file.
-  Future<void> saveDraft(String pdfFilePath, List<PdfFieldEntity> fields) async {
-    final dir = await _getDraftsDirectory();
-    final file = File('${dir.path}/${_draftFileName(pdfFilePath)}');
+  String _draftPdfName(String pdfFilePath) {
+    final safe = pdfFilePath
+        .replaceAll(RegExp(r'[/\\:*?"<>|]'), '_')
+        .replaceAll('.', '_');
+    return '$safe.draft.pdf';
+  }
 
-    // Only save fields that were added by the user (isNewField = true)
-    // We don't want to serialize parsed AcroForm fields.
+  /// Save the current overlay fields as a draft JSON file.
+  Future<void> saveDraft(String originalPdfPath, List<PdfFieldEntity> fields, {String? currentPdfPath}) async {
+    final dir = await _getDraftsDirectory();
+    final jsonFile = File('${dir.path}/${_draftFileName(originalPdfPath)}');
+
     final draftFields = fields.where((f) => f.isNewField).toList();
     final jsonList = draftFields.map(_fieldToJson).toList();
-    await file.writeAsString(jsonEncode(jsonList));
+    await jsonFile.writeAsString(jsonEncode(jsonList));
+
+    // If currentPdfPath is different from original (meaning page reorder/structural change),
+    // save a copy of the modified PDF as part of the draft.
+    if (currentPdfPath != null && currentPdfPath != originalPdfPath) {
+      final draftPdfFile = File('${dir.path}/${_draftPdfName(originalPdfPath)}');
+      await File(currentPdfPath).copy(draftPdfFile.path);
+    }
+  }
+
+  /// Returns the path to the draft PDF file if it exists, otherwise null.
+  Future<String?> getDraftPdfPath(String originalPdfPath) async {
+    final dir = await _getDraftsDirectory();
+    final file = File('${dir.path}/${_draftPdfName(originalPdfPath)}');
+    if (await file.exists()) return file.path;
+    return null;
   }
 
   /// Load a previously saved draft for the given PDF file.
@@ -69,9 +87,13 @@ class DraftService {
   /// Delete the draft for the given PDF (e.g. after final save/discard).
   Future<void> deleteDraft(String pdfFilePath) async {
     final dir = await _getDraftsDirectory();
-    final file = File('${dir.path}/${_draftFileName(pdfFilePath)}');
-    if (await file.exists()) {
-      await file.delete();
+    final jsonFile = File('${dir.path}/${_draftFileName(pdfFilePath)}');
+    if (await jsonFile.exists()) {
+      await jsonFile.delete();
+    }
+    final pdfFile = File('${dir.path}/${_draftPdfName(pdfFilePath)}');
+    if (await pdfFile.exists()) {
+      await pdfFile.delete();
     }
   }
 

@@ -18,6 +18,7 @@ import '../../data/services/recent_files_service.dart';
 import '../../data/services/app_preferences_service.dart';
 import '../../data/services/ml_kit_model_service.dart';
 import '../../domain/entities/page_action.dart';
+import '../providers/pdf_thumbnail_provider.dart';
 import 'page_manager_page.dart';
 import '../widgets/pdf_editor_appbar.dart';
 import '../widgets/pdf_editor_toolbar.dart';
@@ -73,6 +74,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   PdfFieldEntity? _pendingEraser; 
   String _selectedMarkerType = 'check'; 
   bool _isToolbarExpanded = false;
+  bool _isProcessingPages = false;
 
   @override
   void initState() {
@@ -108,7 +110,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   Future<void> _autoSaveDraft() async {
     final doc = ref.read(pdfEditorProvider).asData?.value;
     if (doc != null && doc.isModified) {
-      await _draftService.saveDraft(doc.originalPath, doc.fields);
+      await _draftService.saveDraft(doc.originalPath, doc.fields, currentPdfPath: doc.filePath);
       await _recentService.updateDraftStatus(doc.originalPath, hasDraft: true);
     }
   }
@@ -189,11 +191,16 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           if (doc != null) {
             await _draftService.deleteDraft(doc.originalPath);
             await _recentService.updateDraftStatus(doc.originalPath, hasDraft: false);
+            ref.invalidate(pdfThumbnailProvider(doc.originalPath));
           }
           ref.read(pdfEditorProvider.notifier).clearDocument();
           if (context.mounted) Navigator.of(context).pop();
         } else if (result == 'draft') {
           await _autoSaveDraft();
+          final doc = ref.read(pdfEditorProvider).asData?.value;
+          if (doc != null) {
+            ref.invalidate(pdfThumbnailProvider(doc.originalPath));
+          }
           ref.read(pdfEditorProvider.notifier).clearDocument();
           if (context.mounted) Navigator.of(context).pop();
         }
@@ -209,23 +216,25 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
          
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
-                      child: PdfEditorAppBar(
-                        docName: doc.fileName,
-                        isEditing: _activeMode != EditorMode.none,
-                        onPageManagerTap: () => _onPageManagerTap(doc.originalPath),
+            body: Stack(
+              children: [
+                SafeArea(
+                  child: Column(
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 800),
+                          child: PdfEditorAppBar(
+                            docName: doc.fileName,
+                            isEditing: _activeMode != EditorMode.none,
+                            onPageManagerTap: () => _onPageManagerTap(doc.filePath),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
-                      child: PdfEditorToolbar(
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 800),
+                          child: PdfEditorToolbar(
                         activeMode: _activeMode,
                         onModeChanged: (mode) async {
                           if (mode == EditorMode.aiTools) {
@@ -299,8 +308,17 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       },
                     ),
                   ),
-                ],
-              ),
+                    ],
+                  ),
+                ),
+                if (_isProcessingPages)
+                  Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
+                    ),
+                  ),
+              ],
             ),
             bottomNavigationBar: _activeMode == EditorMode.aiTools 
                 ? AiToolsBottomBar(
@@ -454,6 +472,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       child: RepaintBoundary(
                         child: SfPdfViewer.file(
                           File(doc.filePath),
+                          key: ValueKey(doc.filePath),
                           controller: _pdfViewerController,
                           enableDoubleTapZooming: false,
                           canShowPaginationDialog: false,
@@ -584,57 +603,57 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       }
                     },
                   ),
+                  Positioned(
+                    bottom: 20,
+                    right: 20,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _resetView,
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF6C63FF), Color(0xFF8B80FF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.aspect_ratio_rounded, color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                AppStrings.resetView,
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
-      Positioned(
-          bottom: 20,
-          right: 20,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _resetView,
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6C63FF), Color(0xFF8B80FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.aspect_ratio_rounded, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppStrings.resetView,
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+    ],
+  );
+}
 }
