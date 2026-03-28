@@ -14,7 +14,7 @@ class TextEditorDialog extends StatefulWidget {
   final bool isEdit;
 
   const TextEditorDialog({
-    Key? key,
+    super.key,
     this.initialText = '',
     this.initialFontSize = 14,
     this.initialIsBold = false,
@@ -22,7 +22,7 @@ class TextEditorDialog extends StatefulWidget {
     this.initialColor = '0xFF000000',
     this.initialFontFamily = 'Helvetica',
     this.isEdit = false,
-  }) : super(key: key);
+  });
 
   @override
   State<TextEditorDialog> createState() => _TextEditorDialogState();
@@ -114,7 +114,7 @@ class _TextEditorDialogState extends State<TextEditorDialog> {
                           child: BlockPicker(
                             pickerColor: Color(int.parse(currentColor)),
                             onColorChanged: (color) {
-                              setState(() => currentColor = '0x${color.value.toRadixString(16).toUpperCase()}');
+                              setState(() => currentColor = '0x${color.toARGB32().toRadixString(16).toUpperCase()}');
                               Navigator.pop(ctx);
                             },
                           ),

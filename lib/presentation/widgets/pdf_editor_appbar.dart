@@ -37,7 +37,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
           filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
               border: Border(
                 bottom: BorderSide(
                   color: Theme.of(context).dividerColor,
@@ -92,7 +92,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
               ],
@@ -115,7 +115,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
             size: 20,
             color: ref.watch(pdfEditorProvider.notifier).canUndo 
                 ? Theme.of(context).colorScheme.onSurface
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
           ),
           onPressed: ref.watch(pdfEditorProvider.notifier).canUndo 
               ? () => ref.read(pdfEditorProvider.notifier).undo() 
@@ -127,7 +127,7 @@ class PdfEditorAppBar extends ConsumerWidget implements PreferredSizeWidget {
             size: 20,
             color: ref.watch(pdfEditorProvider.notifier).canRedo 
                 ? Theme.of(context).colorScheme.onSurface
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
           ),
           onPressed: ref.watch(pdfEditorProvider.notifier).canRedo 
               ? () => ref.read(pdfEditorProvider.notifier).redo() 

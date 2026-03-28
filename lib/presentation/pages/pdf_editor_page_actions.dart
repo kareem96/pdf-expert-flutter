@@ -219,11 +219,11 @@ extension _PdfEditorActions on _PdfEditorPageState {
       await _draftService.deleteDraft(previousOriginalPath);
       await _recentService.updateDraftStatus(previousOriginalPath, hasDraft: false);
 
-      if (mounted) {
+      if (context.mounted) {
         CustomToast.show(context, message: AppStrings.toastSaveSuccess + fileName);
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         CustomToast.show(context, message: AppStrings.toastSaveFailed + e.toString(), isError: true);
       }
     }

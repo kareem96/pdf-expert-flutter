@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/entities/pdf_field_entity.dart';
@@ -371,13 +372,13 @@ class PdfEditor extends _$PdfEditor {
     final repository = ref.read(pdfRepositoryProvider);
     try {
       final fileName = customFileName ?? 'edited_${DateTime.now().millisecondsSinceEpoch}_${doc.fileName}';
-      print('PdfEditor: Attempting to save to $fileName');
+      // PdfEditor: Attempting to save to $fileName
       final savedFile = await repository.savePdf(
         document: doc,
         customName: fileName,
         customDirectory: customDirectory,
       );
-      print('PdfEditor: Save successful at ${savedFile.path}');
+      // PdfEditor: Save successful at ${savedFile.path}
       
       // Record this newly generated file in Recents so user can click it from Home!
       final recentService = RecentFilesService();
@@ -385,12 +386,12 @@ class PdfEditor extends _$PdfEditor {
       
       // RE-LOAD: Setelah save, kita panggil loadPdf lagi. 
       // File yang baru disimpan akan menjadi state 'originalPath' yang baru pada sesi ini.
-      print('PdfEditor: Triggering re-load for flattened view...');
+      // PdfEditor: Triggering re-load for flattened view...
       await loadPdf(savedFile.path);
-      print('PdfEditor: Re-load completed.');
+      // PdfEditor: Re-load completed.
       
     } catch (e, st) {
-      print('PdfEditor ERROR during save: $e\n$st');
+      debugPrint('PdfEditor ERROR during save: $e\n$st');
       state = AsyncValue.error(e, st);
     }
   }

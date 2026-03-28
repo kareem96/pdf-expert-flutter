@@ -198,7 +198,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive && !isDisabled 
-              ? const Color(0xFF6C63FF).withOpacity(0.2) 
+              ? const Color(0xFF6C63FF).withValues(alpha: 0.2) 
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -215,7 +215,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
               Icon(
                 icon, 
                 size: 18, 
-                color: isActive ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7)
+                color: isActive ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
               ),
               const SizedBox(width: 8),
               if (isBeta) ...[
@@ -224,7 +224,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: isActive && !isDisabled ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive && !isDisabled ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    color: isActive && !isDisabled ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     decoration: TextDecoration.lineThrough,
                   ),
                 ),
@@ -232,7 +232,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(AppStrings.labelBeta, style: const TextStyle(fontSize: 8, color: Colors.orange)),
@@ -243,7 +243,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    color: isActive ? const Color(0xFF6C63FF) : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
                 ),
                 if (id == 'erase' && isDisabled) ...[
@@ -251,7 +251,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
                    Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
+                      color: Colors.blue.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(AppStrings.labelBasic, style: const TextStyle(fontSize: 8, color: Colors.blue)),
@@ -275,7 +275,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
         child: Container(
           height: 60,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.85),
+            color: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.85),
             border: Border(
               top: BorderSide(
                 color: Theme.of(context).brightness == Brightness.dark
@@ -286,7 +286,7 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),

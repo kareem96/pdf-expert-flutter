@@ -11,13 +11,13 @@ class EraserOverlay extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const EraserOverlay({
-    Key? key,
+    super.key,
     required this.pageScales,
     required this.pagePixelOffsets,
     this.pendingEraser,
     required this.onCancel,
     required this.onConfirm,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

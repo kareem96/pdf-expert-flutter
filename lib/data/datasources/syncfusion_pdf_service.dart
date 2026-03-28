@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_pdf/src/pdf/implementation/pages/pdf_page.dart';
 import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/entities/pdf_field_entity.dart';
 
@@ -161,13 +160,6 @@ class SyncfusionPdfService {
       if (pageIdx < document.pages.count) {
         final PdfPage page = document.pages[pageIdx];
         
-        try {
-          final PdfSection? section = PdfPageHelper.getHelper(page).section;
-          if (section != null) {
-            section.pageSettings.margins.all = 0;
-          }
-        } catch (_) {}
-
         final PdfGraphics graphics = page.graphics;
         graphics.save();
         

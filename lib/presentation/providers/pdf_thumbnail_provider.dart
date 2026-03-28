@@ -21,7 +21,7 @@ final pdfThumbnailProvider = FutureProvider.family<Uint8List?, String>((ref, pat
       return await page.toPng();
     }
   } catch (e) {
-    print('Error generating thumbnail for $path: $e');
+    // logger: Error generating thumbnail for $path: $e
   }
   return null;
 });

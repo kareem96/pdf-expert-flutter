@@ -15,7 +15,7 @@ class PdfFieldOverlay extends StatefulWidget {
   final VoidCallback onErase;
 
   const PdfFieldOverlay({
-    Key? key,
+    super.key,
     required this.field,
     required this.scale,
     required this.offset,
@@ -24,7 +24,7 @@ class PdfFieldOverlay extends StatefulWidget {
     required this.onEdit,
     required this.isEraserMode,
     required this.onErase,
-  }) : super(key: key);
+  });
 
   @override
   State<PdfFieldOverlay> createState() => _PdfFieldOverlayState();
@@ -35,8 +35,11 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
     try {
       String clean = colorStr.replaceAll('#', '');
       if (!clean.startsWith('0x')) {
-        if (clean.length == 6) clean = '0xFF$clean';
-        else if (clean.length == 8) clean = '0x$clean';
+        if (clean.length == 6) {
+          clean = '0xFF$clean';
+        } else if (clean.length == 8) {
+          clean = '0x$clean';
+        }
       } else if (clean.startsWith('0x') && clean.length == 8) {
         // Handle 0xRRGGBB format by adding FF alpha
         clean = '0xFF${clean.substring(2)}';
@@ -141,7 +144,7 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
                             height: currentHeight,
                           )
                     : isMarker
-                        ? Container(
+                        ? SizedBox(
                             width: currentWidth,
                             height: currentHeight,
                             child: FittedBox(

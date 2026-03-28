@@ -253,9 +253,9 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                           });
 
                           if (mode == EditorMode.text) {
-                            CustomToast.show(context, message: AppStrings.toastTextActive);
+                            if (context.mounted) CustomToast.show(context, message: AppStrings.toastTextActive);
                           } else if (mode == EditorMode.marker) {
-                            CustomToast.show(context, message: AppStrings.toastMarkerActive);
+                            if (context.mounted) CustomToast.show(context, message: AppStrings.toastMarkerActive);
                           }
                         },
                         onAddSignature: () => _onAddSignature(doc),
@@ -575,7 +575,7 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       child: Container(
                         padding: const EdgeInsets.fromLTRB(10, 5, 2, 5),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.85),
+                          color: Colors.black.withValues(alpha: 0.85),
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(20),
                             bottomLeft: Radius.circular(20),

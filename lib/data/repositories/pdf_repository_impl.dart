@@ -83,6 +83,7 @@ class PdfRepositoryImpl implements IPdfRepository {
 
   @override
   Future<void> sharePdf(File file) async {
+    // ignore: deprecated_member_use
     await Share.shareXFiles([XFile(file.path)]);
   }
 

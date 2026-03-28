@@ -9,11 +9,11 @@ class MarkerSelectorDialog extends StatefulWidget {
   final bool isEdit;
 
   const MarkerSelectorDialog({
-    Key? key,
+    super.key,
     this.initialType = 'check',
     this.initialColor = '0xFF000000',
     this.isEdit = false,
-  }) : super(key: key);
+  });
 
   @override
   State<MarkerSelectorDialog> createState() => _MarkerSelectorDialogState();
@@ -93,7 +93,7 @@ class _MarkerSelectorDialogState extends State<MarkerSelectorDialog> {
             spacing: 10,
             runSpacing: 10,
             children: availableColors.map((color) {
-              final bool isColorSelected = selectedColor.value == color.value;
+              final bool isColorSelected = selectedColor == color;
               return GestureDetector(
                 onTap: () => setState(() => selectedColor = color),
                 child: Container(
@@ -107,7 +107,7 @@ class _MarkerSelectorDialogState extends State<MarkerSelectorDialog> {
                       width: isColorSelected ? 2 : 1,
                     ),
                     boxShadow: isColorSelected ? [
-                      BoxShadow(color: Colors.amber.withOpacity(0.3), blurRadius: 4),
+                      BoxShadow(color: Colors.amber.withValues(alpha: 0.3), blurRadius: 4),
                     ] : null,
                   ),
                   child: isColorSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
@@ -139,7 +139,7 @@ class _MarkerSelectorDialogState extends State<MarkerSelectorDialog> {
           onPressed: () => Navigator.pop(context, {
             'action': 'save',
             'type': selectedType,
-            'color': '0x${selectedColor.value.toRadixString(16).toUpperCase()}',
+            'color': '0x${selectedColor.toARGB32().toRadixString(16).toUpperCase()}',
           }),
           child: Text(widget.isEdit ? 'Update' : 'Add', style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
@@ -167,7 +167,7 @@ class _MarkerOption extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.amber.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+          color: isSelected ? Colors.amber.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? Colors.amber : Colors.transparent,

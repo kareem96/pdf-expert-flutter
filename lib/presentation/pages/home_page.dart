@@ -180,10 +180,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (newName != null && newName.isNotEmpty && newName != nameWithoutExt) {
       try {
         await _recentService.renameFile(entry.filePath, newName);
-        CustomToast.show(context, message: AppStrings.toastRenameSuccess);
+        if (mounted) CustomToast.show(context, message: AppStrings.toastRenameSuccess);
         _loadRecents();
       } catch (e) {
-        CustomToast.show(context, message: e.toString(), isError: true);
+        if (mounted) CustomToast.show(context, message: e.toString(), isError: true);
       }
     }
   }
@@ -245,7 +245,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     ref.watch(appStringsProvider);
     final double screenWidth = MediaQuery.of(context).size.width;
-    final pdfState = ref.watch(pdfEditorProvider);
 
     final searchedFiles = _recentFiles.where((f) {
       if (_searchQuery.isEmpty) return true;
@@ -289,7 +288,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: Theme.of(context).brightness == Brightness.light
-                    ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))]
+                    ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))]
                     : null,
                 ),
                 child: Row(
@@ -318,14 +317,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                           ),
                           Text(AppStrings.appSubtitle,
                             style: GoogleFonts.inter(
-                              fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                      icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
                       onPressed: _showSettingsDialog,
                     ),
                   ],
@@ -370,7 +369,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     borderRadius: BorderRadius.circular(14),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFF6C63FF).withOpacity(0.35),
+                                        color: const Color(0xFF6C63FF).withValues(alpha: 0.35),
                                         blurRadius: 16,
                                         offset: const Offset(0, 6),
                                       ),
@@ -419,7 +418,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   AppStrings.hintSwipeDelete,
                                   style: GoogleFonts.inter(
                                     fontSize: 10,
-                                    color: const Color(0xFF8888AA).withOpacity(0.7),
+                                    color: const Color(0xFF8888AA).withValues(alpha: 0.7),
                                     fontStyle: FontStyle.italic,
                                   ),
                                 ),
@@ -558,8 +557,8 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF0F0F1A).withOpacity(0.95)
-                : Colors.white.withOpacity(0.95),
+                ? const Color(0xFF0F0F1A).withValues(alpha: 0.95)
+                : Colors.white.withValues(alpha: 0.95),
             border: overlapsContent
                 ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1))
                 : null,
@@ -680,22 +679,22 @@ class _ContinueBanner extends ConsumerWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFF6C63FF).withOpacity(0.2),
-              const Color(0xFF9B59B6).withOpacity(0.15),
+              const Color(0xFF6C63FF).withValues(alpha: 0.2),
+              const Color(0xFF9B59B6).withValues(alpha: 0.15),
             ],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.4)),
+          border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
             Container(
               width: 44, height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF).withOpacity(0.2),
+                color: const Color(0xFF6C63FF).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -710,7 +709,7 @@ class _ContinueBanner extends ConsumerWidget {
                       )
                     : const Icon(Icons.edit_note_rounded, color: Color(0xFF6C63FF), size: 20),
                 loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6C63FF))),
-                error: (_, __) => const Icon(Icons.edit_note_rounded, color: Color(0xFF6C63FF), size: 20),
+                error: (context, error) => const Icon(Icons.edit_note_rounded, color: Color(0xFF6C63FF), size: 20),
               ),
             ),
             const SizedBox(width: 12),
@@ -800,11 +799,11 @@ class _RecentFileTile extends ConsumerWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF2E2E4A).withOpacity(0.3)
+                    ? const Color(0xFF2E2E4A).withValues(alpha: 0.3)
                     : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 ),
               ),
               clipBehavior: Clip.hardEdge,
@@ -816,7 +815,7 @@ class _RecentFileTile extends ConsumerWidget {
                           ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
                           : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 40),
                       loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                      error: (_, __) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 40),
+                      error: (context, error) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 40),
                     ),
                   ),
                   Positioned(
@@ -847,10 +846,10 @@ class _RecentFileTile extends ConsumerWidget {
           width: 44, height: 44,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [const Color(0xFF6C63FF).withOpacity(0.2), const Color(0xFF9B59B6).withOpacity(0.2)],
+              colors: [const Color(0xFF6C63FF).withValues(alpha: 0.2), const Color(0xFF9B59B6).withValues(alpha: 0.2)],
             ),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1)),
+            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
           ),
           clipBehavior: Clip.hardEdge,
           child: thumbAsync.when(
@@ -858,7 +857,7 @@ class _RecentFileTile extends ConsumerWidget {
                 ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
                 : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
             loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)),
-            error: (_, __) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
+            error: (context, error) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
           ),
         ),
         title: Text(entry.fileName,
@@ -877,7 +876,7 @@ class _RecentFileTile extends ConsumerWidget {
       margin: isGrid ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
-            ? (isGrid ? Colors.transparent : const Color(0xFF1E1E2E).withOpacity(0.5))
+            ? (isGrid ? Colors.transparent : const Color(0xFF1E1E2E).withValues(alpha: 0.5))
             : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: isGrid ? null : Border.all(
@@ -886,7 +885,7 @@ class _RecentFileTile extends ConsumerWidget {
               : Colors.grey.shade200,
         ),
         boxShadow: !isGrid && Theme.of(context).brightness == Brightness.light
-            ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]
             : null,
       ),
       child: isGrid ? GestureDetector(onTap: onTap, child: content) : content,
@@ -900,7 +899,7 @@ class _RecentFileTile extends ConsumerWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: Colors.red.withOpacity(0.2),
+        color: Colors.red.withValues(alpha: 0.2),
         child: const Icon(Icons.delete_outline, color: Colors.redAccent),
       ),
       confirmDismiss: (_) => _showDeleteDialog(context),
@@ -921,7 +920,7 @@ class _RecentFileTile extends ConsumerWidget {
         }
         if (val == 'share') {
           try {
-            await Share.shareXFiles([XFile(entry.filePath)], text: 'PDF Expert: ${entry.fileName}');
+            await Share.shareXFiles([XFile(entry.filePath)], text: 'PDF Expert: ${entry.fileName}'); // ignore: deprecated_member_use
           } catch (e) {
             if (context.mounted) CustomToast.show(context, message: 'Share failed: $e', isError: true);
           }
