@@ -434,9 +434,8 @@ class PdfEditor extends _$PdfEditor {
       // 2. Load the structural changes (new paths, new page counts)
       final newDocBase = await repository.loadPdf(modifiedFile.path);
       
-      // 3. Map the fields to their new pages and rotate them if necessary
+      // 3. Map the fields to their new pages
       List<int> mapping = List.generate(totalPages, (i) => i);
-      Map<int, int> rotations = {}; // PageIndex -> cumulative rotation delta
 
       for (final action in actions) {
         if (action.type == PageActionType.reorder) {
@@ -450,12 +449,6 @@ class PdfEditor extends _$PdfEditor {
           if (action.pageIndex < mapping.length) {
             mapping.removeAt(action.pageIndex);
           }
-        } else if (action.type == PageActionType.rotate) {
-          final int idx = action.pageIndex;
-          if (idx < mapping.length) {
-            final int originalIdx = mapping[idx];
-            rotations[originalIdx] = (rotations[originalIdx] ?? 0) + (action.value as int);
-          }
         }
       }
 
@@ -465,49 +458,14 @@ class PdfEditor extends _$PdfEditor {
         oldToNew[mapping[i]] = i;
       }
 
-      // Filter, update pageIndex, and transform coordinates for rotation
+      // Filter and update pageIndex only
       final updatedFields = existingFields.map((field) {
         if (!oldToNew.containsKey(field.pageIndex)) return null; // Deleted
         
         final int oldIdx = field.pageIndex;
         final int newIdx = oldToNew[oldIdx]!;
-        final int rotationDelta = (rotations[oldIdx] ?? 0) % 360;
 
-        if (rotationDelta == 0) {
-          return field.copyWith(pageIndex: newIdx);
-        }
-
-        // Apply rotation-aware coordinate transformation
-        final double oldW = doc.pageWidths[oldIdx];
-        final double oldH = doc.pageHeights[oldIdx];
-        double x = field.x;
-        double y = field.y;
-        double w = field.width;
-        double h = field.height;
-
-        if (rotationDelta == 90 || rotationDelta == -270) {
-          // 90 Deg CW: x' = H - (y + h), y' = x
-          final nx = oldH - (y + h);
-          final ny = x;
-          x = nx; y = ny;
-          w = field.height; h = field.width;
-        } else if (rotationDelta == 180 || rotationDelta == -180) {
-          // 180 Deg: x' = W - (x + w), y' = H - (y + h)
-          x = oldW - (x + w);
-          y = oldH - (y + h);
-        } else if (rotationDelta == 270 || rotationDelta == -90) {
-          // 270 Deg CW: x' = y, y' = W - (x + w)
-          final nx = y;
-          final ny = oldW - (x + w);
-          x = nx; y = ny;
-          w = field.height; h = field.width;
-        }
-
-        return field.copyWith(
-          pageIndex: newIdx,
-          x: x, y: y,
-          width: w, height: h,
-        );
+        return field.copyWith(pageIndex: newIdx);
       }).whereType<PdfFieldEntity>().toList();
       
       final finalDoc = newDocBase.copyWith(

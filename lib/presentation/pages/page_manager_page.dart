@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../common/constants/app_strings.dart';
 import '../providers/page_manager_provider.dart';
-import '../providers/pdf_editor_provider.dart';
 import '../widgets/custom_toast.dart';
 
 class PageManagerPage extends ConsumerStatefulWidget {
@@ -42,11 +41,6 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
         elevation: 0,
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.rotate_90_degrees_ccw_rounded, color: Colors.white70),
-            onPressed: () => _confirmRotateAll(),
-            tooltip: 'Rotate All 90°',
-          ),
           if (state.pendingActions.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -80,7 +74,6 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
   }
 
   Widget _buildThumbnailItem(int index, dynamic thumbData) {
-    final state = ref.watch(pageManagerProvider);
     return Container(
       key: ValueKey('page_$index'),
       margin: const EdgeInsets.only(bottom: 16),
@@ -91,18 +84,15 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: RotatedBox(
-          quarterTurns: (state.rotations[index] / 90).round(),
-          child: Container(
-            width: 60,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-              image: DecorationImage(
-                image: MemoryImage(thumbData),
-                fit: BoxFit.contain,
-              ),
+        leading: Container(
+          width: 60,
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+            image: DecorationImage(
+              image: MemoryImage(thumbData),
+              fit: BoxFit.contain,
             ),
           ),
         ),
@@ -112,17 +102,9 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.rotate_left_rounded, color: Colors.white70),
-              onPressed: () => _confirmRotate(index, -90),
-            ),
-            IconButton(
-              icon: const Icon(Icons.rotate_right_rounded, color: Colors.white70),
-              onPressed: () => _confirmRotate(index, 90),
-            ),
-            IconButton(
               icon: Icon(
                 Icons.delete_outline_rounded, 
-                color: state.thumbnails.length > 1 ? Colors.redAccent : Colors.white24,
+                color: ref.watch(pageManagerProvider).thumbnails.length > 1 ? Colors.redAccent : Colors.white24,
               ),
               onPressed: () => _confirmDelete(index),
             ),
@@ -131,77 +113,6 @@ class _PageManagerPageState extends ConsumerState<PageManagerPage> {
         ),
       ),
     );
-  }
-
-  void _confirmRotate(int index, int angle) {
-    final doc = ref.read(pdfEditorProvider).asData?.value;
-    final hasDraftFields = doc != null && doc.isModified && doc.fields.any((f) => f.isNewField);
-
-    if (hasDraftFields) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          title: const Text('Simpan Dulu?', style: TextStyle(color: Colors.white)),
-          content: const Text(
-            'Kamu punya teks/anotasi yang belum disimpan.\n\nJika tetap rotate, semua anotasi draft akan hilang.',
-            style: TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                // Clear all new fields before rotate
-                ref.read(pdfEditorProvider.notifier).clearNewFields();
-                ref.read(pageManagerProvider.notifier).rotatePage(index, angle);
-              },
-              child: const Text('Lanjutkan Rotate', style: TextStyle(color: Colors.orange)),
-            ),
-          ],
-        ),
-      );
-    } else {
-      ref.read(pageManagerProvider.notifier).rotatePage(index, angle);
-    }
-  }
-
-  void _confirmRotateAll() {
-    final doc = ref.read(pdfEditorProvider).asData?.value;
-    final hasDraftFields = doc != null && doc.isModified && doc.fields.any((f) => f.isNewField);
-
-    if (hasDraftFields) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          title: const Text('Simpan Dulu?', style: TextStyle(color: Colors.white)),
-          content: const Text(
-            'Kamu punya teks/anotasi yang belum disimpan.\n\nJika tetap rotate all, semua anotasi draft akan hilang.',
-            style: TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                ref.read(pdfEditorProvider.notifier).clearNewFields();
-                ref.read(pageManagerProvider.notifier).rotateAllPages(90);
-              },
-              child: const Text('Lanjutkan Rotate All', style: TextStyle(color: Colors.orange)),
-            ),
-          ],
-        ),
-      );
-    } else {
-      ref.read(pageManagerProvider.notifier).rotateAllPages(90);
-    }
   }
 
   void _confirmDelete(int index) {

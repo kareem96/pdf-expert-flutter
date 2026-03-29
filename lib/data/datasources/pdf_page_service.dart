@@ -35,9 +35,7 @@ class PdfPageService {
     try {
       // 1. Initialize page sequence and rotations
       List<int> pageIndices = List.generate(sourceDocument.pages.count, (i) => i);
-      Map<int, int> pageRotations = {}; // originalIndex -> rotation angle
-
-      // 2. Process actions to determine final sequence and properties
+      // 2. Process actions to determine final sequence
       for (final action in actions) {
         switch (action.type) {
           case PageActionType.reorder:
@@ -46,16 +44,6 @@ class PdfPageService {
             if (from < pageIndices.length && to < pageIndices.length) {
               final int originalIdx = pageIndices.removeAt(from);
               pageIndices.insert(to, originalIdx);
-            }
-            break;
-            
-          case PageActionType.rotate:
-            final int index = action.pageIndex; // This index refers to the CURRENT position in pageIndices
-            final int angleDelta = action.value as int;
-            if (index < pageIndices.length) {
-              final int originalIdx = pageIndices[index];
-              final int currentRot = pageRotations[originalIdx] ?? 0;
-              pageRotations[originalIdx] = _normalizeDegrees(currentRot + angleDelta);
             }
             break;
             
@@ -73,17 +61,12 @@ class PdfPageService {
         final int originalIdx = pageIndices[i];
         final PdfPage sourcePage = sourceDocument.pages[originalIdx];
 
-        final int originalRotation = _mapPdfRotation(sourcePage.rotation);
-        final int actionRotation = pageRotations[originalIdx] ?? 0;
-        final int totalRotation = _normalizeDegrees(originalRotation + actionRotation);
-
-        final PdfTemplate template = sourcePage.createTemplate();
         final Size originalSize = sourcePage.size;
+        final PdfTemplate template = sourcePage.createTemplate();
 
         final PdfSection section = targetDocument.sections!.add();
         section.pageSettings.margins.all = 0;
         section.pageSettings.size = originalSize;
-        section.pageSettings.rotate = _mapRotation(totalRotation);
 
         final PdfPage destinationPage = section.pages.add();
         destinationPage.graphics.drawPdfTemplate(template, Offset.zero, originalSize);
@@ -101,27 +84,5 @@ class PdfPageService {
       sourceDocument.dispose();
       rethrow;
     }
-  }
-
-  int _mapPdfRotation(PdfPageRotateAngle angle) {
-    switch (angle) {
-      case PdfPageRotateAngle.rotateAngle90: return 90;
-      case PdfPageRotateAngle.rotateAngle180: return 180;
-      case PdfPageRotateAngle.rotateAngle270: return 270;
-      case PdfPageRotateAngle.rotateAngle0: return 0;
-    }
-  }
-
-  int _normalizeDegrees(int degrees) {
-    final int normalized = degrees % 360;
-    return normalized < 0 ? normalized + 360 : normalized;
-  }
-
-  PdfPageRotateAngle _mapRotation(int degrees) {
-    final int normalized = _normalizeDegrees(degrees);
-    if (normalized == 90) return PdfPageRotateAngle.rotateAngle90;
-    if (normalized == 180) return PdfPageRotateAngle.rotateAngle180;
-    if (normalized == 270) return PdfPageRotateAngle.rotateAngle270;
-    return PdfPageRotateAngle.rotateAngle0;
   }
 }

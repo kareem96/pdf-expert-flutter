@@ -1,4 +1,4 @@
-enum PageActionType { reorder, rotate, delete }
+enum PageActionType { reorder, delete }
 
 class PageAction {
   final int pageIndex;
