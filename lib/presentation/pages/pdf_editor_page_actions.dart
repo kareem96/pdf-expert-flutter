@@ -37,8 +37,8 @@ extension _PdfEditorActions on _PdfEditorPageState {
       
       // Calculate original aspect ratio
       final bytes = await File(image.path).readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      final ui.FrameInfo frame = await codec.getNextFrame();
       final double originalW = frame.image.width.toDouble();
       final double originalH = frame.image.height.toDouble();
       final double ratio = originalW / originalH;
@@ -50,10 +50,16 @@ extension _PdfEditorActions on _PdfEditorPageState {
         spawn['x'], spawn['y'], permanentPath, spawn['pageIndex'], 
         isSignature: false, width: targetW, height: targetH
       );
+      
+      // Auto reset mode after placing image
+      _update(() => _activeMode = EditorMode.none);
+    } else {
+      // User canceled picking
+      _update(() => _activeMode = EditorMode.none);
     }
   }
 
-  Future<void> _onAddSignature(PdfDocumentEntity doc) async {
+  Future<void> _onAddSignature(PdfDocumentEntity doc, {Offset? position, int? pageIndex}) async {
     final SignatureController signatureController = SignatureController(
       penStrokeWidth: 5,
       penColor: Colors.black,
@@ -98,9 +104,23 @@ extension _PdfEditorActions on _PdfEditorPageState {
                   double targetW = 150.0;
                   double targetH = 100.0; // Fixed ratio 1.5
 
-                  final spawn = _getSpawnPoints(doc);
+                  final double finalX;
+                  final double finalY;
+                  final int finalPageIndex;
+
+                  if (position != null && pageIndex != null) {
+                    finalX = position.dx - (targetW / 2);
+                    finalY = position.dy - (targetH / 2);
+                    finalPageIndex = pageIndex;
+                  } else {
+                    final spawn = _getSpawnPoints(doc);
+                    finalX = spawn['x'];
+                    finalY = spawn['y'];
+                    finalPageIndex = spawn['pageIndex'];
+                  }
+
                   ref.read(pdfEditorProvider.notifier).addImage(
-                    spawn['x'], spawn['y'], permanentPath, spawn['pageIndex'], 
+                    finalX, finalY, permanentPath, finalPageIndex, 
                     isSignature: true, width: targetW, height: targetH
                   );
                   Navigator.pop(context);
@@ -218,6 +238,9 @@ extension _PdfEditorActions on _PdfEditorPageState {
       );
       await _draftService.deleteDraft(previousOriginalPath);
       await _recentService.updateDraftStatus(previousOriginalPath, hasDraft: false);
+      
+      // Sync Home UI - clear draft badge and update current list
+      ref.invalidate(recentFilesProvider);
 
       if (context.mounted) {
         CustomToast.show(context, message: AppStrings.toastSaveSuccess + fileName);

@@ -6,6 +6,7 @@ import '../../domain/repositories/i_pdf_repository.dart';
 
 import '../../data/datasources/ml_kit_ocr_service.dart';
 import '../../data/datasources/pdf_page_service.dart';
+import '../../data/services/recent_files_service.dart';
 
 part 'repository_providers.g.dart';
 
@@ -32,4 +33,9 @@ IPdfRepository pdfRepository(Ref ref) {
   final mlKitService = ref.watch(mlKitOcrServiceProvider);
   final pageService = ref.watch(pdfPageServiceProvider);
   return PdfRepositoryImpl(pdfService, mlKitService, pageService);
+}
+
+@riverpod
+RecentFilesService recentFilesService(Ref ref) {
+  return RecentFilesService();
 }

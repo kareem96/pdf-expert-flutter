@@ -1,19 +1,21 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../common/constants/app_strings.dart';
+import '../providers/recent_files_provider.dart';
 import 'home_page.dart';
 
-class SplashPage extends StatefulWidget {
+class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  ConsumerState<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
+class _SplashPageState extends ConsumerState<SplashPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  bool _navigationTriggered = false;
 
   @override
   void initState() {
@@ -24,22 +26,40 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     );
     _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     
-    _controller.forward();
-
-    Timer(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _checkDataAndNavigate();
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _controller.forward();
+        });
+      }
+    });
+  }
+
+  void _checkDataAndNavigate() {
+    if (_navigationTriggered || !mounted) return;
+
+    final recentFilesState = ref.read(recentFilesProvider);
+    
+    // Only navigate if animation is done AND data is loaded (not loading/error)
+    if (_controller.status == AnimationStatus.completed && !recentFilesState.isLoading) {
+      _navigationTriggered = true;
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    }
   }
 
   @override
@@ -50,6 +70,14 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    // Listen to the provider to trigger navigation as soon as data arrives 
+    // IF the animation is already finished.
+    ref.listen(recentFilesProvider, (previous, next) {
+      if (!next.isLoading) {
+        _checkDataAndNavigate();
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: FadeTransition(
@@ -59,7 +87,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 4),
-              // Logo Utama
               Container(
                 width: 120,
                 height: 120,
@@ -82,7 +109,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                 ),
               ),
               const SizedBox(height: 32),
-              // Indikator Loading
               SizedBox(
                 width: 160,
                 child: ClipRRect(
@@ -95,7 +121,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                 ),
               ),
               const Spacer(flex: 3),
-              // Branding Teks
               Text(
                 AppStrings.byKDevLab,
                 style: GoogleFonts.outfit(

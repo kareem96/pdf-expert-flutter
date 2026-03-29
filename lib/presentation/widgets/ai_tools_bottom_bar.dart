@@ -108,30 +108,34 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
   }
 
   void _showComingSoonPopup(String title, String description) {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.auto_awesome, color: Color(0xFF6C63FF)),
-            const SizedBox(width: 8),
-            Text(AppStrings.comingSoonTitle, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            Icon(Icons.auto_awesome_rounded, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Text(AppStrings.comingSoonTitle, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF6C63FF))),
-            const SizedBox(height: 8),
-            Text(description, style: GoogleFonts.inter(fontSize: 14)),
+            Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: colorScheme.primary)),
+            const SizedBox(height: 12),
+            Text(description, style: GoogleFonts.inter(fontSize: 14, color: colorScheme.onSurfaceVariant)),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(AppStrings.ok, style: const TextStyle(color: Color(0xFF6C63FF))),
+            style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
+            child: Text(AppStrings.ok, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -139,22 +143,27 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
   }
 
   void _showDownloadPopup() {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.cloud_download_outlined, color: Color(0xFF6C63FF)),
-            const SizedBox(width: 8),
-            Text(AppStrings.aiDownloadRequired, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Icon(Icons.cloud_download_outlined, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Text(AppStrings.aiDownloadRequired, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
           ],
         ),
-        content: Text(AppStrings.aiDownloadBody, style: const TextStyle(fontSize: 14)),
+        content: Text(AppStrings.aiDownloadBody, style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(AppStrings.cancel, style: const TextStyle(color: Colors.grey)),
+            style: TextButton.styleFrom(foregroundColor: colorScheme.onSurfaceVariant),
+            child: Text(AppStrings.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -162,8 +171,9 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
               _downloadModel();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6C63FF),
-              foregroundColor: Colors.white,
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              elevation: 0,
             ),
             child: Text(AppStrings.btnDownload),
           ),

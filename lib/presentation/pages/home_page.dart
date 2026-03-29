@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +14,7 @@ import '../providers/pdf_editor_provider.dart';
 import '../providers/pdf_thumbnail_provider.dart';
 import '../providers/app_theme_provider.dart';
 import '../providers/app_language_provider.dart';
+import '../providers/recent_files_provider.dart';
 import '../widgets/custom_toast.dart';
 import '../../common/constants/app_strings.dart';
 import 'pdf_editor_page.dart';
@@ -28,11 +27,8 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  final _recentService = RecentFilesService();
   final _draftService = DraftService();
 
-  List<RecentFileEntry> _recentFiles = [];
-  bool _loading = true;
   bool _isOpening = false;
   int _activeTab = 0;
   String _searchQuery = '';
@@ -42,25 +38,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRecents();
-  }
-
-  Future<void> _loadRecents() async {
-    final files = await _recentService.getRecentFiles();
-    final valid = <RecentFileEntry>[];
-    for (final f in files) {
-      if (await File(f.filePath).exists()) {
-        valid.add(f);
-      } else {
-        await _recentService.removeFile(f.filePath);
-      }
-    }
-    if (mounted) setState(() { _recentFiles = valid; _loading = false; });
   }
 
   Future<void> _pickNewFile() async {
@@ -79,7 +56,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     setState(() => _isOpening = true);
 
     try {
-      await _recentService.recordFileOpened(path);
+      await ref.read(recentFilesProvider.notifier).recordFileOpened(path);
       if (!mounted) return;
 
       if (restoreDraft) {
@@ -104,7 +81,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     } finally {
       if (mounted) {
         setState(() => _isOpening = false);
-        _loadRecents();
       }
     }
   }
@@ -131,7 +107,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       if (choice == null) return;
       if (choice == 'fresh') {
         await _draftService.deleteDraft(entry.filePath);
-        await _recentService.updateDraftStatus(entry.filePath, hasDraft: false);
+        await ref.read(recentFilesProvider.notifier).updateDraftStatus(entry.filePath, hasDraft: false);
         await _openFile(entry.filePath, restoreDraft: false);
       } else {
         await _openFile(entry.filePath, restoreDraft: true);
@@ -142,9 +118,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _removeRecentFile(RecentFileEntry entry) async {
-    await _recentService.removeFile(entry.filePath);
+    await ref.read(recentFilesProvider.notifier).removeFile(entry.filePath);
     await _draftService.deleteDraft(entry.filePath);
-    _loadRecents();
   }
 
   Future<void> _renameRecentFile(RecentFileEntry entry) async {
@@ -179,9 +154,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     if (newName != null && newName.isNotEmpty && newName != nameWithoutExt) {
       try {
-        await _recentService.renameFile(entry.filePath, newName);
+        await ref.read(recentFilesProvider.notifier).renameFile(entry.filePath, newName);
         if (mounted) CustomToast.show(context, message: AppStrings.toastRenameSuccess);
-        _loadRecents();
       } catch (e) {
         if (mounted) CustomToast.show(context, message: e.toString(), isError: true);
       }
@@ -193,7 +167,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       context: context,
       builder: (context) => Consumer(
         builder: (context, ref, child) {
-          final themeMode = ref.watch(themeProvider);
           ref.watch(appStringsProvider);
 
           return AlertDialog(
@@ -203,10 +176,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               children: [
                 ListTile(
                   title: Text(AppStrings.theme),
-                  subtitle: Text(themeMode == ThemeMode.dark ? AppStrings.themeDark : AppStrings.themeLight),
+                  subtitle: Text(Theme.of(context).brightness == Brightness.dark ? AppStrings.themeDark : AppStrings.themeLight),
                   trailing: Switch(
-                    value: themeMode == ThemeMode.dark,
-                    onChanged: (_) => ref.read(themeProvider.notifier).toggleTheme(),
+                    value: Theme.of(context).brightness == Brightness.dark,
+                    onChanged: (_) => ref.read(themeProvider.notifier).toggleTheme(Theme.of(context).brightness == Brightness.dark),
                   ),
                 ),
                 const Divider(),
@@ -244,20 +217,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     ref.watch(appStringsProvider);
+    final recentFilesAsync = ref.watch(recentFilesProvider);
     final double screenWidth = MediaQuery.of(context).size.width;
-
-    final searchedFiles = _recentFiles.where((f) {
-      if (_searchQuery.isEmpty) return true;
-      return f.fileName.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
-
-    final filteredFiles = searchedFiles.where((f) {
-      if (_activeTab == 1) return !f.isEdited;
-      if (_activeTab == 2) return f.isEdited;
-      return true;
-    }).toList();
-
-    final latestDraft = _recentFiles.where((f) => f.hasDraft).firstOrNull;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -329,144 +290,149 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ],
                 ),
-              ).animate().fade(duration: 500.ms).slideY(begin: -0.1, end: 0),
+              ), // Removed .animate() for instant first paint to avoid black gap
 
               Expanded(
-                child: _loading || _isOpening
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(color: Color(0xFF6C63FF)),
-                            if (_isOpening) ...[
-                              const SizedBox(height: 16),
-                              Text(AppStrings.preparingDocument,
-                                style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
-                            ]
-                          ],
+                child: recentFilesAsync.when(
+                  data: (recentFiles) {
+                    final searchedFiles = recentFiles.where((f) {
+                      if (_searchQuery.isEmpty) return true;
+                      return f.fileName.toLowerCase().contains(_searchQuery.toLowerCase());
+                    }).toList();
+
+                    final filteredFiles = searchedFiles.where((f) {
+                      if (_activeTab == 1) return !f.isEdited;
+                      if (_activeTab == 2) return f.isEdited;
+                      return true;
+                    }).toList();
+
+                    final latestDraft = recentFiles.where((f) => f.hasDraft).firstOrNull;
+
+                    return CustomScrollView(
+                      slivers: [
+                        if (latestDraft != null) SliverToBoxAdapter(
+                          child: _ContinueBanner(
+                            entry: latestDraft,
+                            onTap: () => _onTapRecentFile(latestDraft),
+                          ),
                         ),
-                      )
-                    : CustomScrollView(
-                        slivers: [
-                          if (latestDraft != null) SliverToBoxAdapter(
-                            child: _ContinueBanner(
-                              entry: latestDraft,
-                              onTap: () => _onTapRecentFile(latestDraft),
-                            ),
-                          ),
 
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-                              child: GestureDetector(
-                                onTap: _pickNewFile,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF6C63FF), Color(0xFF9B59B6)],
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                            child: GestureDetector(
+                              onTap: _pickNewFile,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF6C63FF), Color(0xFF9B59B6)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF6C63FF).withValues(alpha: 0.35),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
                                     ),
-                                    borderRadius: BorderRadius.circular(14),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF6C63FF).withValues(alpha: 0.35),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                                      const SizedBox(width: 10),
-                                      Text(AppStrings.openNewPdf,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 15, fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  ],
                                 ),
-                              ).animate(delay: 150.ms).fade().scale(),
-                            ),
-                          ),
-
-                          if (_recentFiles.isNotEmpty)
-                            SliverPersistentHeader(
-                              pinned: true,
-                              delegate: _StickyHeaderDelegate(
-                                searchController: _searchController,
-                                searchQuery: _searchQuery,
-                                activeTab: _activeTab,
-                                onSearchChanged: (val) => setState(() => _searchQuery = val),
-                                onSearchCleared: () {
-                                  _searchController.clear();
-                                  setState(() => _searchQuery = '');
-                                  FocusScope.of(context).unfocus();
-                                },
-                                onTabChanged: (idx) => setState(() => _activeTab = idx),
-                              ),
-                            ),
-
-                          if (filteredFiles.isNotEmpty && screenWidth < 600) SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 8, bottom: 4),
-                              child: Center(
-                                child: Text(
-                                  AppStrings.hintSwipeDelete,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: const Color(0xFF8888AA).withValues(alpha: 0.7),
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          _buildRecentContent(context, filteredFiles, screenWidth),
-
-                          if (_recentFiles.isNotEmpty && filteredFiles.isEmpty) SliverToBoxAdapter(
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 60),
-                                child: Column(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.search_off_rounded, size: 48, color: Color(0xFF44445A)),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      _searchQuery.isNotEmpty
-                                          ? AppStrings.noMatchesInTab
-                                          : AppStrings.noFilesInCategory,
-                                      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF66667A)),
+                                    const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 10),
+                                    Text(AppStrings.openNewPdf,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 15, fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ).animate().fade().scale(),
+                            ),
                           ),
-                          if (_recentFiles.isEmpty) SliverToBoxAdapter(
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 60),
-                                child: Column(
-                                  children: [
-                                    const Icon(Icons.folder_open_outlined, size: 56, color: Color(0xFF44445A)),
-                                    const SizedBox(height: 12),
-                                    Text(AppStrings.noRecentFiles,
-                                      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF66667A)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ).animate().fade().scale(),
+                        ),
+
+                        if (recentFiles.isNotEmpty)
+                          SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _StickyHeaderDelegate(
+                              searchController: _searchController,
+                              searchQuery: _searchQuery,
+                              activeTab: _activeTab,
+                              onSearchChanged: (val) => setState(() => _searchQuery = val),
+                              onSearchCleared: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                                FocusScope.of(context).unfocus();
+                              },
+                              onTabChanged: (idx) => setState(() => _activeTab = idx),
+                            ),
                           ),
 
-                          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-                        ],
-                      ),
+                        if (filteredFiles.isNotEmpty && screenWidth < 600) SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8, bottom: 4),
+                            child: Center(
+                              child: Text(
+                                AppStrings.hintSwipeDelete,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: const Color(0xFF8888AA).withValues(alpha: 0.7),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        _buildRecentContent(context, filteredFiles, screenWidth),
+
+                        if (recentFiles.isNotEmpty && filteredFiles.isEmpty) SliverToBoxAdapter(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 60),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.search_off_rounded, size: 48, color: Color(0xFF44445A)),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _searchQuery.isNotEmpty
+                                        ? AppStrings.noMatchesInTab
+                                        : AppStrings.noFilesInCategory,
+                                    style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF66667A)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ).animate().fade().scale(),
+                        ),
+                        if (recentFiles.isEmpty) SliverToBoxAdapter(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 60),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.folder_open_outlined, size: 56, color: Color(0xFF44445A)),
+                                  const SizedBox(height: 12),
+                                  Text(AppStrings.noRecentFiles,
+                                    style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF66667A)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ).animate().fade().scale(),
+                        ),
+
+                        const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                      ],
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(), // Should be unreachable because Splash waits
+                  error: (e, s) => Center(child: Text('Error: $e')),
+                ),
               ),
             ],
           ),
@@ -813,151 +779,205 @@ class _RecentFileTile extends ConsumerWidget {
                     child: thumbAsync.when(
                       data: (data) => data != null
                           ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
-                          : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 40),
+                          : Center(child: Icon(Icons.picture_as_pdf_outlined, color: Colors.red.withValues(alpha: 0.5), size: 40)),
                       loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                      error: (context, error) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 40),
+                      error: (e, s) => const Center(child: Icon(Icons.error_outline)),
                     ),
                   ),
-                  Positioned(
-                    top: 4, right: 4,
-                    child: _buildPopMenu(context),
-                  ),
+                  if (entry.hasDraft)
+                    Positioned(
+                      top: 8, right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
+                        child: const Icon(Icons.edit, size: 10, color: Colors.black),
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(entry.fileName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-          Text(_formatDate(entry.lastOpened),
-            style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888AA)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(entry.fileName,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(_formatDate(entry.lastOpened),
+                      style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888AA)),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.more_vert, size: 16, color: Color(0xFF8888AA)),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _showOptions(context),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       );
     } else {
-      content = ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [const Color(0xFF6C63FF).withValues(alpha: 0.2), const Color(0xFF9B59B6).withValues(alpha: 0.2)],
+      content = Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF1E1E2E).withValues(alpha: 0.5)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF2E2E4A).withValues(alpha: 0.3)
+                : Colors.grey.shade200,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50, height: 65,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: thumbAsync.when(
+                data: (data) => data != null
+                    ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
+                    : const Icon(Icons.picture_as_pdf, color: Colors.red, size: 30),
+                loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                error: (e, s) => const Icon(Icons.error_outline),
+              ),
             ),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
-          ),
-          clipBehavior: Clip.hardEdge,
-          child: thumbAsync.when(
-            data: (data) => data != null
-                ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
-                : const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
-            loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)),
-            error: (context, error) => const Icon(Icons.description_rounded, color: Color(0xFF8B80FF), size: 24),
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(entry.fileName,
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      if (entry.hasDraft)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(AppStrings.labelDraft, style: const TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold)),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, size: 12, color: const Color(0xFF8888AA).withValues(alpha: 0.7)),
+                      const SizedBox(width: 4),
+                      Text(_formatDate(entry.lastOpened),
+                        style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8888AA)),
+                      ),
+                      const SizedBox(width: 12),
+                      if (entry.isEdited) ...[
+                        Icon(Icons.check_circle_outline, size: 12, color: Colors.green.withValues(alpha: 0.7)),
+                        const SizedBox(width: 4),
+                        Text(AppStrings.labelEdited, style: GoogleFonts.inter(fontSize: 12, color: Colors.green.withValues(alpha: 0.8))),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8888AA)),
+              onPressed: () => _showOptions(context),
+            ),
+          ],
         ),
-        title: Text(entry.fileName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(_formatDate(entry.lastOpened),
-          style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8888AA)),
-        ),
-        trailing: _buildPopMenu(context),
       );
     }
 
-    final tile = Container(
-      margin: isGrid ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? (isGrid ? Colors.transparent : const Color(0xFF1E1E2E).withValues(alpha: 0.5))
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: isGrid ? null : Border.all(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF2E2E4A)
-              : Colors.grey.shade200,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: isGrid ? content : Dismissible(
+            key: Key(entry.filePath),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            ),
+            confirmDismiss: (_) => _showDeleteDialog(context),
+            onDismissed: (_) => onDismiss(),
+            child: content,
+          ),
         ),
-        boxShadow: !isGrid && Theme.of(context).brightness == Brightness.light
-            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]
-            : null,
       ),
-      child: isGrid ? GestureDetector(onTap: onTap, child: content) : content,
-    );
-
-    if (isGrid) return tile;
-
-    return Dismissible(
-      key: ValueKey(entry.filePath),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red.withValues(alpha: 0.2),
-        child: const Icon(Icons.delete_outline, color: Colors.redAccent),
-      ),
-      confirmDismiss: (_) => _showDeleteDialog(context),
-      onDismissed: (_) => onDismiss(),
-      child: tile,
     );
   }
 
-  Widget _buildPopMenu(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert_rounded, color: const Color(0xFF8888AA), size: isGrid ? 18 : 22),
-      padding: EdgeInsets.zero,
-      onSelected: (val) async {
-        if (val == 'rename') onRename();
-        if (val == 'delete') {
-          final confirmed = await _showDeleteDialog(context);
-          if (confirmed) onDismiss();
-        }
-        if (val == 'share') {
-          try {
-            await Share.shareXFiles([XFile(entry.filePath)], text: 'PDF Expert: ${entry.fileName}'); // ignore: deprecated_member_use
-          } catch (e) {
-            if (context.mounted) CustomToast.show(context, message: 'Share failed: $e', isError: true);
-          }
-        }
-      },
-      itemBuilder: (ctx) => [
-        PopupMenuItem(
-          value: 'rename',
-          child: Row(
-            children: [
-              const Icon(Icons.edit_outlined, size: 18),
-              const SizedBox(width: 10),
-              Text(AppStrings.actionRename, style: const TextStyle(fontSize: 13)),
-            ],
-          ),
+  void _showOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        PopupMenuItem(
-          value: 'share',
-          child: Row(
-            children: [
-              const Icon(Icons.share_outlined, size: 18),
-              const SizedBox(width: 10),
-              Text(AppStrings.modeShare, style: const TextStyle(fontSize: 13)),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(AppStrings.actionRename),
+              onTap: () { Navigator.pop(ctx); onRename(); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: Text(AppStrings.modeShare),
+              onTap: () { Navigator.pop(ctx); Share.share(entry.filePath); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              title: Text(AppStrings.actionDelete, style: const TextStyle(color: Colors.redAccent)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final confirmed = await _showDeleteDialog(context);
+                if (confirmed) onDismiss();
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
         ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-              const SizedBox(width: 10),
-              Text(AppStrings.actionDelete, style: const TextStyle(fontSize: 13, color: Colors.redAccent)),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

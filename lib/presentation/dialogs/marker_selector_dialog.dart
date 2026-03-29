@@ -45,14 +45,23 @@ class _MarkerSelectorDialogState extends State<MarkerSelectorDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return AlertDialog(
-      backgroundColor: const Color(0xFF1E1E2E),
-      surfaceTintColor: Colors.transparent,
-      contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: colorScheme.surfaceTint,
+      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Text(
         widget.isEdit ? 'Edit Marker' : 'Select Marker',
         textAlign: TextAlign.center,
-        style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+        style: GoogleFonts.inter(
+          color: colorScheme.onSurface, 
+          fontWeight: FontWeight.bold, 
+          fontSize: 20,
+          letterSpacing: -0.5,
+        ),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -61,80 +70,97 @@ class _MarkerSelectorDialogState extends State<MarkerSelectorDialog> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _MarkerOption(
-                icon: Icons.check,
+                icon: Icons.check_rounded,
                 isSelected: selectedType == 'check',
                 onTap: () => setState(() => selectedType = 'check'),
+                colorScheme: colorScheme,
               ),
               _MarkerOption(
-                icon: Icons.close,
+                icon: Icons.close_rounded,
                 isSelected: selectedType == 'close',
                 onTap: () => setState(() => selectedType = 'close'),
+                colorScheme: colorScheme,
               ),
               _MarkerOption(
-                icon: Icons.square,
+                icon: Icons.square_rounded,
                 isSelected: selectedType == 'square',
                 onTap: () => setState(() => selectedType = 'square'),
+                colorScheme: colorScheme,
               ),
               _MarkerOption(
-                icon: Icons.circle,
+                icon: Icons.circle_rounded,
                 isSelected: selectedType == 'circle',
                 onTap: () => setState(() => selectedType = 'circle'),
+                colorScheme: colorScheme,
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
           Text(
             'Select Color',
-            style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+            style: GoogleFonts.inter(
+              color: colorScheme.onSurfaceVariant, 
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 10,
-            runSpacing: 10,
+            spacing: 12,
+            runSpacing: 12,
             children: availableColors.map((color) {
               final bool isColorSelected = selectedColor == color;
               return GestureDetector(
                 onTap: () => setState(() => selectedColor = color),
                 child: Container(
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: color,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isColorSelected ? Colors.amber : Colors.white24,
-                      width: isColorSelected ? 2 : 1,
+                      color: isColorSelected ? colorScheme.primary : Colors.white24,
+                      width: isColorSelected ? 3 : 1,
                     ),
                     boxShadow: isColorSelected ? [
-                      BoxShadow(color: Colors.amber.withValues(alpha: 0.3), blurRadius: 4),
+                      BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2)),
                     ] : null,
                   ),
-                  child: isColorSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+                  child: isColorSelected ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
                 ),
               );
             }).toList(),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
         ],
       ),
-      actionsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       actions: [
         if (widget.isEdit)
-          TextButton(
+          IconButton(
             onPressed: () => Navigator.pop(context, {'action': 'delete'}),
-            child: Text(AppStrings.delete, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+            icon: Icon(Icons.delete_outline_rounded, color: colorScheme.error),
+            style: IconButton.styleFrom(
+              backgroundColor: colorScheme.error.withValues(alpha: 0.1),
+              padding: const EdgeInsets.all(12),
+            ),
           ),
+        if (widget.isEdit) const Spacer(),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(AppStrings.cancel, style: const TextStyle(color: Colors.white60, fontSize: 13)),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          child: Text(AppStrings.cancel, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w500)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber,
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
           ),
           onPressed: () => Navigator.pop(context, {
             'action': 'save',
@@ -152,11 +178,13 @@ class _MarkerOption extends StatelessWidget {
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
+  final ColorScheme colorScheme;
 
   const _MarkerOption({
     required this.icon,
     required this.isSelected,
     required this.onTap,
+    required this.colorScheme,
   });
 
   @override
@@ -165,19 +193,18 @@ class _MarkerOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.amber.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? Colors.amber : Colors.transparent,
-            width: 2,
-          ),
+          color: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected ? [
+            BoxShadow(color: colorScheme.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
+          ] : null,
         ),
         child: Icon(
           icon,
-          color: isSelected ? Colors.amber : Colors.white60,
-          size: 22,
+          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+          size: 24,
         ),
       ),
     );

@@ -74,5 +74,24 @@ final pdfRepositoryProvider = AutoDisposeProvider<IPdfRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PdfRepositoryRef = AutoDisposeProviderRef<IPdfRepository>;
+String _$recentFilesServiceHash() =>
+    r'66f3c8cc62c4e5c9b93f8ddc6b437bba32f3ab5f';
+
+/// See also [recentFilesService].
+@ProviderFor(recentFilesService)
+final recentFilesServiceProvider =
+    AutoDisposeProvider<RecentFilesService>.internal(
+      recentFilesService,
+      name: r'recentFilesServiceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$recentFilesServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef RecentFilesServiceRef = AutoDisposeProviderRef<RecentFilesService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -31,7 +31,12 @@ class PdfFieldOverlay extends StatefulWidget {
 }
 
 class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
+  Color? _cachedColor;
+  String? _lastColorStr;
+
   Color _parseColor(String colorStr, {Color fallback = Colors.black}) {
+    if (_lastColorStr == colorStr && _cachedColor != null) return _cachedColor!;
+    
     try {
       String clean = colorStr.replaceAll('#', '');
       if (!clean.startsWith('0x')) {
@@ -41,10 +46,11 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
           clean = '0x$clean';
         }
       } else if (clean.startsWith('0x') && clean.length == 8) {
-        // Handle 0xRRGGBB format by adding FF alpha
         clean = '0xFF${clean.substring(2)}';
       }
-      return Color(int.parse(clean));
+      _lastColorStr = colorStr;
+      _cachedColor = Color(int.parse(clean));
+      return _cachedColor!;
     } catch (_) {
       return fallback;
     }
@@ -67,7 +73,12 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
       _resizeDw = 0;
       _resizeDh = 0;
     }
+    // Clear color cache if field might have changed (though entity is immutable)
+    if (oldWidget.field.textColor != widget.field.textColor) {
+      _lastColorStr = null;
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -82,9 +93,8 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
         ? ((widget.field.height * widget.scale) + _resizeDh)
         : math.max(20.0, (widget.field.height * widget.scale) + _resizeDh);
 
-    return Positioned(
-      left: widget.offset.dx + _dragDx,
-      top: widget.offset.dy + _dragDy,
+    return Transform.translate(
+      offset: Offset(_dragDx, _dragDy),
       child: Stack(
         clipBehavior: Clip.none,
         children: [

@@ -8,6 +8,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/entities/pdf_field_entity.dart';
 import '../providers/pdf_editor_provider.dart';
+import '../providers/recent_files_provider.dart';
 import '../providers/repository_providers.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:signature/signature.dart';
@@ -147,8 +148,10 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
-    final pdfState = ref.watch(pdfEditorProvider);
-    final doc = pdfState.asData?.value;
+    // Optimize: Only watch essential metadata to avoid full page rebuilds
+    final docAsData = ref.watch(pdfEditorProvider.select((s) => s.asData));
+    final doc = docAsData?.value;
+
     final isEditing = doc != null;
 
     return PopScope(
@@ -193,6 +196,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
             await _draftService.deleteDraft(doc.originalPath);
             await _recentService.updateDraftStatus(doc.originalPath, hasDraft: false);
             ref.invalidate(pdfThumbnailProvider(doc.originalPath));
+            // Force refresh recent files list for Home synchronization
+            ref.invalidate(recentFilesProvider);
           }
           ref.read(pdfEditorProvider.notifier).clearDocument();
           if (context.mounted) Navigator.of(context).pop();
@@ -202,12 +207,28 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           if (doc != null) {
             ref.invalidate(pdfThumbnailProvider(doc.originalPath));
           }
+          // Force refresh recent files list for Home synchronization
+          ref.invalidate(recentFilesProvider);
           ref.read(pdfEditorProvider.notifier).clearDocument();
           if (context.mounted) Navigator.of(context).pop();
         }
       },
-      child: pdfState.when(
-        data: (doc) {
+      child: docAsData == null || docAsData.isLoading
+        ? Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
+          )
+        : docAsData.hasError ? 
+          Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Center(
+              child: Text('${AppStrings.error}: ${docAsData.error}', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+          )
+        : (() {
+          final doc = docAsData.value;
+
+
           if (doc == null) {
             return Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -256,6 +277,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                             if (context.mounted) CustomToast.show(context, message: AppStrings.toastTextActive);
                           } else if (mode == EditorMode.marker) {
                             if (context.mounted) CustomToast.show(context, message: AppStrings.toastMarkerActive);
+                          } else if (mode == EditorMode.sign) {
+                            if (context.mounted) CustomToast.show(context, message: AppStrings.toastSignActive);
                           }
                         },
                         onAddSignature: () => _onAddSignature(doc),
@@ -373,20 +396,10 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                   )
                 : null,
           );
-        },
-        loading: () => Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
-        ),
-        error: (err, stack) => Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: Center(
-            child: Text('${AppStrings.error}: $err', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ),
-        ),
-      ),
+        }()),
     );
   }
+
 
   Widget _buildSecondaryToolbarOverlay(PdfDocumentEntity doc) {
     return AnimatedPositioned(
@@ -561,6 +574,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                             _onAddMarker(pageRelativePos, tappedPageIdx);
                           } else if (_activeMode == EditorMode.text) {
                             _onAddCustomText(pageRelativePos, tappedPageIdx);
+                          } else if (_activeMode == EditorMode.sign) {
+                            _onAddSignature(doc, position: pageRelativePos, pageIndex: tappedPageIdx);
                           }
                         }
                       },
@@ -593,42 +608,59 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                     );
                   }),
 
-                  ...doc.fields.where((PdfFieldEntity f) => f.isNewField).map((field) {
-                    final int pIdx = field.pageIndex;
-                    if (pIdx >= _cachedPageScales.length) return const SizedBox.shrink();
+                  // Optimize: Use Consumer to isolate field rebuilds
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final fields = ref.watch(pdfEditorProvider.select((s) => s.value?.fields ?? []));
+                      final newFields = fields.where((f) => f.isNewField).toList();
+                      
+                      return Stack(
+                        children: newFields.map((field) {
+                          final int pIdx = field.pageIndex;
+                          if (pIdx >= _cachedPageScales.length) return const SizedBox.shrink();
 
-                    final double pageScale = _cachedPageScales[pIdx];
-                    final double pageTopPixel = _cachedPagePixelOffsets[pIdx];
+                          final double pageScale = _cachedPageScales[pIdx];
+                          final double pageTopPixel = _cachedPagePixelOffsets[pIdx];
 
-                    final double screenX = field.x * pageScale;
-                    final double screenY = pageTopPixel + (field.y * pageScale);
+                          final double screenX = field.x * pageScale;
+                          final double screenY = pageTopPixel + (field.y * pageScale);
 
-                    return PdfFieldOverlay(
-                      key: ValueKey(field.id),
-                      field: field,
-                      scale: pageScale,
-                      offset: Offset(screenX, screenY),
-                      onUpdatePosition: (dx, dy) {
-                        ref.read(pdfEditorProvider.notifier).updateFieldPosition(
-                              field.id,
-                              field.x + (dx / pageScale),
-                              field.y + (dy / pageScale),
-                            );
-                      },
-                      onResize: (dw, dh) {
-                        final double newW = field.width + (dw / pageScale);
-                        final double newH = field.height + (dh / pageScale);
-                        ref.read(pdfEditorProvider.notifier).updateFieldSize(
-                              field.id,
-                              newW > 10 ? newW : 10,
-                              newH > 10 ? newH : 10,
-                            );
-                      },
-                      onEdit: () => _onEditField(field),
-                      isEraserMode: _activeMode == EditorMode.aiTools && _activeAiTool == 'erase',
-                      onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
-                    );
-                  }),
+                          return Positioned(
+                            left: screenX,
+                            top: screenY,
+                            child: RepaintBoundary( // Isolation layer for EACH field
+                              key: ValueKey(field.id),
+                              child: PdfFieldOverlay(
+                                field: field,
+                                scale: pageScale,
+                                offset: Offset(screenX, screenY),
+                                onUpdatePosition: (dx, dy) {
+                                  ref.read(pdfEditorProvider.notifier).updateFieldPosition(
+                                        field.id,
+                                        field.x + (dx / pageScale),
+                                        field.y + (dy / pageScale),
+                                      );
+                                },
+                                onEdit: () => _onEditField(field),
+                                isEraserMode: _activeMode == EditorMode.aiTools && _activeAiTool == 'erase',
+                                onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
+                                onResize: (dw, dh) {
+                                  final double newW = field.width + (dw / pageScale);
+                                  final double newH = field.height + (dh / pageScale);
+                                  ref.read(pdfEditorProvider.notifier).updateFieldSize(
+                                        field.id,
+                                        newW > 10 ? newW : 10,
+                                        newH > 10 ? newH : 10,
+                                      );
+                                },
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+
 
                   EraserOverlay(
                     pageScales: _cachedPageScales,

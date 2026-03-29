@@ -29,8 +29,8 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
     await _prefs.setThemeMode(mode.name);
   }
 
-  void toggleTheme() {
-    if (state == ThemeMode.dark) {
+  void toggleTheme(bool currentIsDark) {
+    if (currentIsDark) {
       setThemeMode(ThemeMode.light);
     } else {
       setThemeMode(ThemeMode.dark);

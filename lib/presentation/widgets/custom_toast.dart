@@ -6,6 +6,9 @@ class CustomToast {
     final scaffold = ScaffoldMessenger.maybeOf(context);
     if (scaffold == null) return;
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     scaffold.hideCurrentSnackBar();
     scaffold.showSnackBar(
       SnackBar(
@@ -13,7 +16,7 @@ class CustomToast {
           children: [
             Icon(
               isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
-              color: Colors.white,
+              color: isError ? Colors.white : colorScheme.onPrimary,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -21,9 +24,9 @@ class CustomToast {
               child: Text(
                 message,
                 style: GoogleFonts.inter(
-                  color: Colors.white,
+                  color: isError ? Colors.white : colorScheme.onPrimary,
                   fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -31,9 +34,9 @@ class CustomToast {
         ),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: isError ? Colors.redAccent.shade700 : const Color(0xFF00C896),
-        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: isError ? colorScheme.error : colorScheme.primary,
+        elevation: 6,
         duration: const Duration(seconds: 3),
       ),
     );

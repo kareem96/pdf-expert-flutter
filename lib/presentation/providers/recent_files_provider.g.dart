@@ -1,26 +1,29 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'pdf_editor_provider.dart';
+part of 'recent_files_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pdfEditorHash() => r'73a087d4c18f9bd16f162e4c31a2bf44841e2480';
+String _$recentFilesHash() => r'db0c3b80ad85dd182eb913d20594385b6b94f436';
 
-/// See also [PdfEditor].
-@ProviderFor(PdfEditor)
-final pdfEditorProvider =
-    NotifierProvider<PdfEditor, AsyncValue<PdfDocumentEntity?>>.internal(
-      PdfEditor.new,
-      name: r'pdfEditorProvider',
+/// See also [RecentFiles].
+@ProviderFor(RecentFiles)
+final recentFilesProvider =
+    AutoDisposeAsyncNotifierProvider<
+      RecentFiles,
+      List<RecentFileEntry>
+    >.internal(
+      RecentFiles.new,
+      name: r'recentFilesProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$pdfEditorHash,
+          : _$recentFilesHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$PdfEditor = Notifier<AsyncValue<PdfDocumentEntity?>>;
+typedef _$RecentFiles = AutoDisposeAsyncNotifier<List<RecentFileEntry>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

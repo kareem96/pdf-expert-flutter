@@ -42,6 +42,7 @@ class AppStrings {
   static String get toastEraserActive => _s == 'id' ? 'Mode Penghapus Aktif. Ketuk teks manapun di PDF untuk menghapusnya.' : 'Eraser Mode Active. Tap any text on the PDF to wipe it.';
   static String get toastMarkerActive => _s == 'id' ? 'Mode Penanda Aktif. Ketuk PDF untuk menaruh penanda.' : 'Marker Mode Active. Tap on PDF to place a marker.';
   static String get toastTextActive => _s == 'id' ? 'Mode Teks Aktif. Ketuk pada PDF untuk mulai menulis.' : 'Text Mode Active. Tap on the PDF to start typing.';
+  static String get toastSignActive => _s == 'id' ? 'Mode Tanda Tangan Aktif. Ketuk pada PDF untuk menaruh tanda tangan.' : 'Signature Mode Active. Tap on the PDF to place your signature.';
   static String get toastTextErased => _s == 'id' ? 'Teks Berhasil Dihapus Permanen!' : 'Text Erased Permanently!';
   static String get toastSaveSuccess => _s == 'id' ? 'Tersimpan sebagai ' : 'Saved as ';
   static String get toastSaveFailed => _s == 'id' ? 'Gagal menyimpan: ' : 'Save failed: ';
@@ -163,4 +164,5 @@ class AppStrings {
       : 'Are you sure you want to delete Page $index?';
   static String get cannotDeleteLastPage => _s == 'id' ? 'Tidak bisa menghapus halaman terakhir' : 'Cannot delete the last page';
   static String get byKDevLab => 'by K-Dev Lab';
+  static String get labelEdited => _s == 'id' ? 'Diedit' : 'Edited';
 }

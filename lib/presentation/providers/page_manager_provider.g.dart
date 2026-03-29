@@ -6,7 +6,7 @@ part of 'page_manager_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pageManagerHash() => r'4e64e15764222c30b3219da2c5007caae7d219bc';
+String _$pageManagerHash() => r'a181951c17e65ec14b854a977c270cd6ad276dd3';
 
 /// See also [PageManager].
 @ProviderFor(PageManager)
