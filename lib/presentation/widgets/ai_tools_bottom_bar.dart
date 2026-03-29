@@ -281,11 +281,11 @@ class _AiToolsBottomBarState extends ConsumerState<AiToolsBottomBar> {
     
     return ClipRect(
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
         child: Container(
           height: 60,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.85),
+            color: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.9),
             border: Border(
               top: BorderSide(
                 color: Theme.of(context).brightness == Brightness.dark

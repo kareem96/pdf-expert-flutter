@@ -78,12 +78,21 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   bool _isToolbarExpanded = false;
   bool _isProcessingPages = false;
 
+  bool _showViewer = false;
+
   @override
   void initState() {
     super.initState();
     _pdfViewerController.addListener(_onControllerChange);
     WidgetsBinding.instance.addObserver(this);
     _checkInitialModelStatus();
+    
+    // DELAY: Tunggu transisi navigasi selesai sebelum render PDF berat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) setState(() => _showViewer = true);
+      });
+    });
   }
 
   Future<void> _checkInitialModelStatus() async {
@@ -428,13 +437,13 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                       width: 0.5,
                     ),
                   ),
@@ -529,15 +538,17 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                     AbsorbPointer(
                       absorbing: true,
                       child: RepaintBoundary(
-                        child: SfPdfViewer.file(
-                          File(doc.filePath),
-                          key: ValueKey(doc.filePath),
-                          controller: _pdfViewerController,
-                          enableDoubleTapZooming: false,
-                          canShowPaginationDialog: false,
-                          canShowScrollHead: false, 
-                          canShowScrollStatus: false,
-                        ),
+                        child: _showViewer 
+                          ? SfPdfViewer.file(
+                              File(doc.filePath),
+                              key: ValueKey(doc.filePath),
+                              controller: _pdfViewerController,
+                              enableDoubleTapZooming: false,
+                              canShowPaginationDialog: false,
+                              canShowScrollHead: false, 
+                              canShowScrollStatus: false,
+                            )
+                          : Container(color: Theme.of(context).scaffoldBackgroundColor),
                       ),
                     ),
 
