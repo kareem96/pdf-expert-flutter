@@ -19,6 +19,7 @@ class PdfEditorToolbar extends ConsumerStatefulWidget {
   final String selectedMarkerType;
   final bool isExpanded;
   final VoidCallback onToggleExpand;
+  final bool isVertical;
 
   const PdfEditorToolbar({
     super.key,
@@ -33,6 +34,7 @@ class PdfEditorToolbar extends ConsumerStatefulWidget {
     required this.selectedMarkerType,
     required this.isExpanded,
     required this.onToggleExpand,
+    this.isVertical = false,
   });
 
   @override
@@ -63,33 +65,44 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
     final colorScheme = Theme.of(context).colorScheme;
     
     return Container(
-      height: 80,
-      width: double.infinity,
+      height: widget.isVertical ? double.infinity : 80,
+      width: widget.isVertical ? 80 : double.infinity,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-            width: 0.5,
-          ),
-        ),
+        border: widget.isVertical
+            ? Border(
+                right: BorderSide(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                  width: 0.5,
+                ),
+              )
+            : Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                  width: 0.5,
+                ),
+              ),
       ),
       child: ClipRect(
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.isVertical ? 0 : 12,
+              vertical: widget.isVertical ? 12 : 0,
+            ),
+            child: Flex(
+              direction: widget.isVertical ? Axis.vertical : Axis.horizontal,
               children: [
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
+                      scrollDirection: widget.isVertical ? Axis.vertical : Axis.horizontal,
                       child: _buildPrimaryActions(),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: widget.isVertical ? 0 : 8, height: widget.isVertical ? 8 : 0),
                 _buildExpandToggleButton(colorScheme),
               ],
             ),
@@ -100,7 +113,8 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
   }
 
   Widget _buildPrimaryActions() {
-    return Row(
+    return Flex(
+      direction: widget.isVertical ? Axis.vertical : Axis.horizontal,
       mainAxisSize: MainAxisSize.min,
       children: [
         ToolbarButton(
@@ -108,12 +122,14 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
           label: AppStrings.modeSign,
           isActive: widget.activeMode == EditorMode.sign,
           onTap: () => _toggleMode(EditorMode.sign),
+          isVertical: widget.isVertical,
         ),
         ToolbarButton(
           icon: Icons.title_rounded,
           label: AppStrings.modeText,
           isActive: widget.activeMode == EditorMode.text,
           onTap: () => _toggleMode(EditorMode.text),
+          isVertical: widget.isVertical,
         ),
         ToolbarButton(
           icon: Icons.auto_awesome_rounded,
@@ -122,6 +138,7 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
           onTap: () {
             _toggleMode(EditorMode.aiTools);
           },
+          isVertical: widget.isVertical,
         ),
         ToolbarButton(
           icon: _getMarkerIcon(widget.selectedMarkerType),
@@ -133,6 +150,7 @@ class _PdfEditorToolbarState extends ConsumerState<PdfEditorToolbar> {
               CustomToast.show(context, message: AppStrings.toastMarkerActive);
             }
           },
+          isVertical: widget.isVertical,
         ),
       ],
     );

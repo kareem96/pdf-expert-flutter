@@ -119,7 +119,8 @@ class AppStrings {
   static String get searchHint => _s == 'id' ? 'Cari file...' : 'Search files...';
 
   // Home Page Content
-  static String get openNewPdf => _s == 'id' ? 'Buka PDF Baru' : 'Open New PDF';
+  static String get openNewPdf => _s == 'id' ? 'Pilih PDF Baru' : 'Pick New PDF';
+  static String get openPdf => _s == 'id' ? 'Buka PDF Ini' : 'Open This PDF';
   static String get continueEditing => _s == 'id' ? 'Lanjutkan Editing' : 'Continue Editing';
   static String get preparingDocument => _s == 'id' ? 'Menyiapkan Dokumen...' : 'Preparing Document...';
   static String get noRecentFiles => _s == 'id' ? 'Tidak ada file terbaru' : 'No recent files';

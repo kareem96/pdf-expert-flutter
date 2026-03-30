@@ -17,6 +17,7 @@ import '../providers/app_language_provider.dart';
 import '../providers/recent_files_provider.dart';
 import '../widgets/custom_toast.dart';
 import '../../common/constants/app_strings.dart';
+import '../widgets/adaptive_layout_wrapper.dart';
 import 'pdf_editor_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -33,6 +34,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _activeTab = 0;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  RecentFileEntry? _selectedFile;
 
   @override
   void dispose() {
@@ -86,6 +88,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _onTapRecentFile(RecentFileEntry entry) async {
+    if (AdaptiveLayoutWrapper.isTablet(context)) {
+      setState(() => _selectedFile = entry);
+      return;
+    }
+
     if (entry.hasDraft) {
       final choice = await showDialog<String>(
         context: context,
@@ -307,8 +314,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                     }).toList();
 
                     final latestDraft = recentFiles.where((f) => f.hasDraft).firstOrNull;
+                    final bool isTablet = AdaptiveLayoutWrapper.isTablet(context);
 
-                    return CustomScrollView(
+                    Widget mainList = CustomScrollView(
                       slivers: [
                         if (latestDraft != null) SliverToBoxAdapter(
                           child: _ContinueBanner(
@@ -372,7 +380,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                        if (filteredFiles.isNotEmpty && screenWidth < 600) SliverToBoxAdapter(
+                        if (filteredFiles.isNotEmpty && !isTablet) SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.only(top: 8, bottom: 4),
                             child: Center(
@@ -429,6 +437,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                         const SliverToBoxAdapter(child: SizedBox(height: 32)),
                       ],
                     );
+
+                    if (!isTablet) return mainList;
+
+                    return Row(
+                      children: [
+                        Expanded(flex: screenWidth > 900 ? 5 : 6, child: mainList),
+                        VerticalDivider(width: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                        Expanded(flex: screenWidth > 900 ? 7 : 8, child: _buildDetailPanel(_selectedFile, screenWidth)),
+                      ],
+                    );
                   },
                   loading: () => const SizedBox.shrink(), // Should be unreachable because Splash waits
                   error: (e, s) => Center(child: Text('Error: $e')),
@@ -437,6 +455,91 @@ class _HomePageState extends ConsumerState<HomePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailPanel(RecentFileEntry? entry, double screenWidth) {
+    if (entry == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.description_outlined, size: 64, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
+            const SizedBox(height: 16),
+            Text(
+              AppStrings.searchHint.replaceAll('...', ''), 
+              style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final thumbAsync = ref.watch(pdfThumbnailProvider(entry.filePath));
+
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Preview Card
+          Expanded(
+            flex: 2,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E2E) : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: thumbAsync.when(
+                data: (data) => data != null
+                    ? Container(color: Colors.white, child: Image.memory(data, fit: BoxFit.contain, alignment: Alignment.topCenter))
+                    : const Center(child: Icon(Icons.picture_as_pdf, size: 80, color: Colors.red)),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, s) => const Center(child: Icon(Icons.error_outline)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Metadata
+          Text(
+            entry.fileName,
+            style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Last opened: ${DateFormat('d MMM y, HH:mm').format(entry.lastOpened)}',
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+          ),
+          const SizedBox(height: 48),
+          // Action Buttons
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton.icon(
+              onPressed: () => _openFile(entry.filePath, restoreDraft: entry.hasDraft),
+              icon: Icon(entry.hasDraft ? Icons.edit_note_rounded : Icons.menu_book_rounded),
+              label: Text(
+                entry.hasDraft ? AppStrings.continueEditing : AppStrings.openPdf,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6C63FF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -462,6 +565,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               onDismiss: () => _removeRecentFile(files[i]),
               onRename: () => _renameRecentFile(files[i]),
               isGrid: true,
+              isSelected: _selectedFile?.filePath == files[i].filePath,
             ),
             childCount: files.length,
           ),
@@ -483,6 +587,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onDismiss: () => _removeRecentFile(files[i]),
                 onRename: () => _renameRecentFile(files[i]),
                 isGrid: false,
+                isSelected: _selectedFile?.filePath == files[i].filePath,
               ),
             ),
           ),
@@ -671,7 +776,7 @@ class _ContinueBanner extends ConsumerWidget {
                         color: Colors.white,
                         width: double.infinity,
                         height: double.infinity,
-                        child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter),
+                        child: Container(color: Colors.white, child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)),
                       )
                     : const Icon(Icons.edit_note_rounded, color: Color(0xFF6C63FF), size: 20),
                 loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6C63FF))),
@@ -708,6 +813,7 @@ class _RecentFileTile extends ConsumerWidget {
   final VoidCallback onDismiss;
   final VoidCallback onRename;
   final bool isGrid;
+  final bool isSelected;
 
   const _RecentFileTile({
     required this.entry,
@@ -715,6 +821,7 @@ class _RecentFileTile extends ConsumerWidget {
     required this.onDismiss,
     required this.onRename,
     required this.isGrid,
+    this.isSelected = false,
   });
 
   String _formatDate(DateTime dt) {
@@ -757,87 +864,109 @@ class _RecentFileTile extends ConsumerWidget {
 
     Widget content;
     if (isGrid) {
-      content = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF2E2E4A).withValues(alpha: 0.3)
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-                ),
-              ),
-              clipBehavior: Clip.hardEdge,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: thumbAsync.when(
-                      data: (data) => data != null
-                          ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
-                          : Center(child: Icon(Icons.picture_as_pdf_outlined, color: Colors.red.withValues(alpha: 0.5), size: 40)),
-                      loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                      error: (e, s) => const Center(child: Icon(Icons.error_outline)),
-                    ),
+      content = AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF6C63FF) : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF2E2E4A).withValues(alpha: 0.3)
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected 
+                        ? const Color(0xFF6C63FF).withValues(alpha: 0.3)
+                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                   ),
-                  if (entry.hasDraft)
-                    Positioned(
-                      top: 8, right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
-                        child: const Icon(Icons.edit, size: 10, color: Colors.black),
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: thumbAsync.when(
+                        data: (data) => data != null
+                            ? Container(color: Colors.white, child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter))
+                            : Center(child: Icon(Icons.picture_as_pdf_outlined, color: Colors.red.withValues(alpha: 0.5), size: 40)),
+                        loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        error: (e, s) => const Center(child: Icon(Icons.error_outline)),
                       ),
                     ),
+                    if (entry.hasDraft)
+                      Positioned(
+                        top: 8, right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
+                          child: const Icon(Icons.edit, size: 10, color: Colors.black),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.fileName,
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13, 
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected ? const Color(0xFF6C63FF) : null,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(_formatDate(entry.lastOpened),
+                        style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888AA)),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert, size: 16, color: Color(0xFF8888AA)),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => _showOptions(context),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(entry.fileName,
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(_formatDate(entry.lastOpened),
-                      style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8888AA)),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.more_vert, size: 16, color: Color(0xFF8888AA)),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _showOptions(context),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       );
     } else {
-      content = Container(
+      content = AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF1E1E2E).withValues(alpha: 0.5)
-              : Colors.white,
+          color: isSelected 
+              ? const Color(0xFF6C63FF).withValues(alpha: 0.1)
+              : (Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E1E2E).withValues(alpha: 0.5)
+                  : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF2E2E4A).withValues(alpha: 0.3)
-                : Colors.grey.shade200,
+            color: isSelected 
+                ? const Color(0xFF6C63FF) 
+                : (Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2E2E4A).withValues(alpha: 0.3)
+                    : Colors.grey.shade200),
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
@@ -851,7 +980,7 @@ class _RecentFileTile extends ConsumerWidget {
               clipBehavior: Clip.hardEdge,
               child: thumbAsync.when(
                 data: (data) => data != null
-                    ? Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter)
+                    ? Container(color: Colors.white, child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter))
                     : const Icon(Icons.picture_as_pdf, color: Colors.red, size: 30),
                 loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 error: (e, s) => const Icon(Icons.error_outline),

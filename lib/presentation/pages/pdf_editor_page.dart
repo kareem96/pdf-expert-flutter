@@ -23,6 +23,7 @@ import '../providers/pdf_thumbnail_provider.dart';
 import 'page_manager_page.dart';
 import '../widgets/pdf_editor_appbar.dart';
 import '../widgets/pdf_editor_toolbar.dart';
+import '../widgets/adaptive_layout_wrapper.dart';
 import '../widgets/ai_tools_bottom_bar.dart';
 import '../widgets/custom_toast.dart';
 import '../widgets/pdf_field_overlay.dart';
@@ -245,51 +246,30 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
             );
           }
          
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: Stack(
-              children: [
-                SafeArea(
-                  child: Column(
-                    children: [
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 800),
-                          child: PdfEditorAppBar(
-                            docName: doc.fileName,
-                            isEditing: _activeMode != EditorMode.none,
-                            onPageManagerTap: () => _onPageManagerTap(doc.filePath),
-                          ),
-                        ),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          SafeArea(
+            child: AdaptiveLayoutWrapper(
+              mobile: Column(
+                children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: PdfEditorAppBar(
+                        docName: doc.fileName,
+                        isEditing: _activeMode != EditorMode.none,
+                        onPageManagerTap: () => _onPageManagerTap(doc.filePath),
                       ),
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 800),
-                          child: PdfEditorToolbar(
+                    ),
+                  ),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: PdfEditorToolbar(
                         activeMode: _activeMode,
-                        onModeChanged: (mode) async {
-                          if (mode == EditorMode.aiTools) {
-                            final isDownloaded = await _mlKitModelService.isModelDownloaded();
-                            if (!isDownloaded) {
-                              if (mounted) _showAiScanDownloadPopup();
-                              return;
-                            }
-                          }
-                          
-                          _update(() {
-                            _activeMode = mode;
-                            if (mode == EditorMode.aiTools) _activeAiTool = 'erase'; 
-                            _pendingEraser = null;
-                          });
-
-                          if (mode == EditorMode.text) {
-                            if (context.mounted) CustomToast.show(context, message: AppStrings.toastTextActive);
-                          } else if (mode == EditorMode.marker) {
-                            if (context.mounted) CustomToast.show(context, message: AppStrings.toastMarkerActive);
-                          } else if (mode == EditorMode.sign) {
-                            if (context.mounted) CustomToast.show(context, message: AppStrings.toastSignActive);
-                          }
-                        },
+                        onModeChanged: (mode) => _handleModeChange(mode),
                         onAddSignature: () => _onAddSignature(doc),
                         onAddImage: () => _onAddImage(doc),
                         onAddText: () => _onAddTextFromToolbar(doc),
@@ -299,52 +279,45 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                         selectedMarkerType: _selectedMarkerType,
                         isExpanded: _isToolbarExpanded,
                         onToggleExpand: () => _update(() => _isToolbarExpanded = !_isToolbarExpanded),
+                        isVertical: false,
                       ),
                     ),
                   ),
+                  Expanded(child: _buildPdfContent(doc)),
+                ],
+              ),
+              tablet: Row(
+                children: [
+                  PdfEditorToolbar(
+                    activeMode: _activeMode,
+                    onModeChanged: (mode) => _handleModeChange(mode),
+                    onAddSignature: () => _onAddSignature(doc),
+                    onAddImage: () => _onAddImage(doc),
+                    onAddText: () => _onAddTextFromToolbar(doc),
+                    onAddNote: () => _onAddStickyNote(doc),
+                    onSave: () => _onSave(doc),
+                    onShare: () => _onShare(doc),
+                    selectedMarkerType: _selectedMarkerType,
+                    isExpanded: _isToolbarExpanded,
+                    onToggleExpand: () => _update(() => _isToolbarExpanded = !_isToolbarExpanded),
+                    isVertical: true,
+                  ),
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final size = Size(constraints.maxWidth, constraints.maxHeight);
-                        
-                        // Recalculate if constraints change, first time, OR if file changed (after page actions)
-                        if (_lastConstraintsSize != size || _cachedPagePixelOffsets.isEmpty || _lastDocFilePath != doc.filePath) {
-                          _lastConstraintsSize = size;
-                          _lastDocFilePath = doc.filePath;
-                          _cachedPagePixelOffsets = [];
-                          _cachedPageScales = [];
-                          _cachedTotalDocHeight = 0;
-                          const double pageSpacing = 4.0;
-
-                          for (int i = 0; i < doc.pageWidths.length; i++) {
-                            final double pWidth = doc.pageWidths[i];
-                            final double pHeight = doc.pageHeights[i];
-                            if (pWidth <= 0 || pHeight <= 0) continue; 
-                            
-                            double s = (constraints.maxWidth / pWidth);
-                            if (s <= 0 || s.isInfinite || s.isNaN) s = 1.0; 
-                            
-                            _cachedPageScales.add(s);
-                            _cachedPagePixelOffsets.add(_cachedTotalDocHeight);
-                            _cachedTotalDocHeight += (pHeight * s) + pageSpacing;
-                          }
-                          if (_cachedTotalDocHeight <= 0) {
-                            _cachedTotalDocHeight = constraints.maxHeight > 0 ? constraints.maxHeight : 500;
-                          }
-                        }
-
-                        return Stack(
-                          children: [
-                            _buildMainContent(context, doc, constraints),
-                            _buildSecondaryToolbarOverlay(doc),
-                          ],
-                        );
-                      },
+                    child: Column(
+                      children: [
+                        PdfEditorAppBar(
+                          docName: doc.fileName,
+                          isEditing: _activeMode != EditorMode.none,
+                          onPageManagerTap: () => _onPageManagerTap(doc.filePath),
+                        ),
+                        Expanded(child: _buildPdfContent(doc)),
+                      ],
                     ),
                   ),
-                    ],
-                  ),
-                ),
+                ],
+              ),
+            ),
+          ),
                 if (_isProcessingPages)
                   Container(
                     color: Colors.black54,
@@ -409,6 +382,70 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
     );
   }
 
+
+  Future<void> _handleModeChange(EditorMode mode) async {
+    if (mode == EditorMode.aiTools) {
+      final isDownloaded = await _mlKitModelService.isModelDownloaded();
+      if (!isDownloaded) {
+        if (mounted) _showAiScanDownloadPopup();
+        return;
+      }
+    }
+    
+    _update(() {
+      _activeMode = mode;
+      if (mode == EditorMode.aiTools) _activeAiTool = 'erase'; 
+      _pendingEraser = null;
+    });
+
+    if (mode == EditorMode.text) {
+      if (context.mounted) CustomToast.show(context, message: AppStrings.toastTextActive);
+    } else if (mode == EditorMode.marker) {
+      if (context.mounted) CustomToast.show(context, message: AppStrings.toastMarkerActive);
+    } else if (mode == EditorMode.sign) {
+      if (context.mounted) CustomToast.show(context, message: AppStrings.toastSignActive);
+    }
+  }
+
+  Widget _buildPdfContent(PdfDocumentEntity doc) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        
+        if (_lastConstraintsSize != size || _cachedPagePixelOffsets.isEmpty || _lastDocFilePath != doc.filePath) {
+          _lastConstraintsSize = size;
+          _lastDocFilePath = doc.filePath;
+          _cachedPagePixelOffsets = [];
+          _cachedPageScales = [];
+          _cachedTotalDocHeight = 0;
+          const double pageSpacing = 4.0;
+
+          for (int i = 0; i < doc.pageWidths.length; i++) {
+            final double pWidth = doc.pageWidths[i];
+            final double pHeight = doc.pageHeights[i];
+            if (pWidth <= 0 || pHeight <= 0) continue; 
+            
+            double s = (constraints.maxWidth / pWidth);
+            if (s <= 0 || s.isInfinite || s.isNaN) s = 1.0; 
+            
+            _cachedPageScales.add(s);
+            _cachedPagePixelOffsets.add(_cachedTotalDocHeight);
+            _cachedTotalDocHeight += (pHeight * s) + pageSpacing;
+          }
+          if (_cachedTotalDocHeight <= 0) {
+            _cachedTotalDocHeight = constraints.maxHeight > 0 ? constraints.maxHeight : 500;
+          }
+        }
+
+        return Stack(
+          children: [
+            _buildMainContent(context, doc, constraints),
+            _buildSecondaryToolbarOverlay(doc),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildSecondaryToolbarOverlay(PdfDocumentEntity doc) {
     return AnimatedPositioned(

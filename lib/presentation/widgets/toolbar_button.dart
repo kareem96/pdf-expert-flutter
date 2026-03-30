@@ -6,6 +6,7 @@ class ToolbarButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool isActive;
+  final bool isVertical;
 
   const ToolbarButton({
     super.key,
@@ -13,6 +14,7 @@ class ToolbarButton extends StatelessWidget {
     required this.label, 
     required this.onTap,
     this.isActive = false,
+    this.isVertical = false,
   });
 
   @override
@@ -23,8 +25,10 @@ class ToolbarButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
-        width: 68,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        width: isVertical ? 72 : 68,
+        margin: isVertical 
+            ? const EdgeInsets.symmetric(vertical: 4, horizontal: 4)
+            : const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
