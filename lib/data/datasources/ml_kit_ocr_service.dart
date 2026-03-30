@@ -6,7 +6,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 
 class MlKitOcrService {
-  final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+  TextRecognizer? _textRecognizer;
+
+  TextRecognizer _getRecognizer() {
+    _textRecognizer ??= TextRecognizer(script: TextRecognitionScript.latin);
+    return _textRecognizer!;
+  }
 
   /// Rasterizes a specific PDF page to an image, then runs OCR to find the word bounds
   /// at the given [tapX, tapY] coordinates in PDF points.
@@ -28,19 +33,20 @@ class MlKitOcrService {
       if (!await pdfFile.exists()) return null;
 
       // 1. Convert the specific PDF page to an Image (Rasterize)
-      // We yield only the page we need to save memory
-      final pdfBytes = await pdfFile.readAsBytes();
+      // Memory optimization: Use Uint8List only within this scope
+      Uint8List? pdfBytes = await pdfFile.readAsBytes();
       
-      // We use a moderate DPI (e.g. 144) to balance speed and OCR accuracy.
-      // Standard PDF is usually 72 DPI. So 144 is 2x scale.
       const double scaleDpi = 144.0;
       final double exportScale = scaleDpi / 72.0;
 
       final pageImageBytesList = await Printing.raster(
-        pdfBytes, 
+        pdfBytes!, 
         pages: [pageIndex], 
         dpi: scaleDpi,
       ).toList();
+
+      // Clear bytes immediately to free memory before OCR processing
+      pdfBytes = null; 
 
       if (pageImageBytesList.isEmpty) return null;
 
@@ -50,17 +56,16 @@ class MlKitOcrService {
       final tempDir = await getTemporaryDirectory();
       final tempFile = File('${tempDir.path}/ocr_temp_${DateTime.now().millisecondsSinceEpoch}.png');
       
-      // Raster from printing provides .toPng() which yields Uint8List
       final Uint8List pngBytes = await rasterImage.toPng();
       await tempFile.writeAsBytes(pngBytes);
 
       // 3. Process with ML Kit
       final InputImage inputImage = InputImage.fromFilePath(tempFile.path);
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      final RecognizedText recognizedText = await _getRecognizer().processImage(inputImage);
       
-      // Clean up the temp image to save storage
+      // Clean up the temp image immediately
       if (await tempFile.exists()) {
-        await tempFile.delete();
+        await tempFile.delete().catchError((_) => tempFile);
       }
 
       // 4. Calculate hit detection
@@ -135,6 +140,6 @@ class MlKitOcrService {
   }
 
   void dispose() {
-    _textRecognizer.close();
+    _textRecognizer?.close();
   }
 }

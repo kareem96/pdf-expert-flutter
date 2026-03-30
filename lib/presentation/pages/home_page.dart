@@ -127,6 +127,9 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _removeRecentFile(RecentFileEntry entry) async {
     await ref.read(recentFilesProvider.notifier).removeFile(entry.filePath);
     await _draftService.deleteDraft(entry.filePath);
+    if (_selectedFile?.filePath == entry.filePath) {
+      setState(() => _selectedFile = null);
+    }
   }
 
   Future<void> _renameRecentFile(RecentFileEntry entry) async {

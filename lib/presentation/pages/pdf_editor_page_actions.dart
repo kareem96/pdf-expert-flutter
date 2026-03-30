@@ -9,8 +9,8 @@ extension _PdfEditorActions on _PdfEditorPageState {
     if (_cachedPagePixelOffsets.isEmpty) return {'x': 0.0, 'y': 0.0, 'pageIndex': 0};
     final size = MediaQuery.of(context).size;
     final double zoom = _zoomNotifier.value;
-    final double screenCenterX = _scrollX + (size.width / 2);
-    final double screenCenterY = _scrollY + (size.height / 2);
+    final double screenCenterX = _scrollXNotifier.value + (size.width / 2);
+    final double screenCenterY = _scrollYNotifier.value + (size.height / 2);
 
     int pIdx = 0;
     for (int i = 0; i < _cachedPagePixelOffsets.length; i++) {

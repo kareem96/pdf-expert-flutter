@@ -1,25 +1,65 @@
 import 'dart:io';
 import 'dart:ui';
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import '../../domain/entities/page_action.dart';
 
 class PdfPageService {
-  /// Generates thumbnails for all pages using high-speed rasterization
+  /// Generates thumbnails for all pages using high-speed rasterization with disk caching
   Future<List<Uint8List>> generateThumbnails(String path, {double dpi = 72.0}) async {
     final File file = File(path);
-    final Uint8List bytes = await file.readAsBytes();
-    
-    final List<Uint8List> thumbnails = [];
-    
-    // We use Printing.raster to convert PDF pages directly to images
-    await for (final page in Printing.raster(bytes, dpi: dpi)) {
-      final Uint8List pngBytes = await page.toPng();
-      thumbnails.add(pngBytes);
+    if (!await file.exists()) return [];
+
+    final stat = await file.stat();
+    final cacheDir = await getTemporaryDirectory();
+    final thumbDir = Directory('${cacheDir.path}/thumbnails/pages/${path.hashCode}');
+    if (!await thumbDir.exists()) {
+      await thumbDir.create(recursive: true);
     }
+
+    final int pageCount = await _getPageCount(file);
+    final List<Uint8List> thumbnails = [];
+
+    // Optimization: Read file into memory only once
+    Uint8List? bytes = await file.readAsBytes();
+    
+    for (int i = 0; i < pageCount; i++) {
+      final cacheKey = '${i}_${dpi}_${stat.modified.millisecondsSinceEpoch}.png';
+      final cacheFile = File('${thumbDir.path}/$cacheKey');
+
+      if (await cacheFile.exists()) {
+        thumbnails.add(await cacheFile.readAsBytes());
+        continue;
+      }
+
+      // If not in cache, generate only for that specific page to save memory
+      await for (final page in Printing.raster(bytes, pages: [i], dpi: dpi)) {
+        final Uint8List pngBytes = await page.toPng();
+        thumbnails.add(pngBytes);
+        // Save to cache asynchronously 
+        cacheFile.writeAsBytes(pngBytes).catchError((_) => cacheFile);
+        break;
+      }
+    }
+
+    // Explicitly clear bytes
+    bytes = null;
     
     return thumbnails;
+  }
+
+  Future<int> _getPageCount(File file) async {
+    try {
+      final Uint8List bytes = await file.readAsBytes();
+      final PdfDocument doc = PdfDocument(inputBytes: bytes);
+      final int count = doc.pages.count;
+      doc.dispose();
+      return count;
+    } catch (_) {
+      return 0;
+    }
   }
 
   /// Reorders, rotates, or deletes pages and saves to a new file

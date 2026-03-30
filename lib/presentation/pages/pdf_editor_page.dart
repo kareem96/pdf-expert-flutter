@@ -60,8 +60,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
   final _mlKitModelService = MlKitModelService();
   late final ValueNotifier<int> _currentPageNotifier = ValueNotifier(1);
   late final ValueNotifier<double> _zoomNotifier = ValueNotifier(1.0);
-  double _scrollX = 0;
-  double _scrollY = 0;
+  late final ValueNotifier<double> _scrollXNotifier = ValueNotifier(0.0);
+  late final ValueNotifier<double> _scrollYNotifier = ValueNotifier(0.0);
   final TransformationController _transformationController = TransformationController();
 
   List<double> _cachedPagePixelOffsets = [];
@@ -109,6 +109,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
     _transformationController.dispose();
     _currentPageNotifier.dispose();
     _zoomNotifier.dispose();
+    _scrollXNotifier.dispose();
+    _scrollYNotifier.dispose();
     super.dispose();
   }
 
@@ -136,8 +138,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
       if (_zoomNotifier.value != _pdfViewerController.zoomLevel) {
         _zoomNotifier.value = _pdfViewerController.zoomLevel;
       }
-      _scrollX = _pdfViewerController.scrollOffset.dx;
-      _scrollY = _pdfViewerController.scrollOffset.dy;
+      _scrollXNotifier.value = _pdfViewerController.scrollOffset.dx;
+      _scrollYNotifier.value = _pdfViewerController.scrollOffset.dy;
     } catch (e) {
       // Ignore
     }
@@ -148,8 +150,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
     _zoomNotifier.value = 1.0;
     _currentPageNotifier.value = 1;
     _update(() {
-      _scrollX = 0;
-      _scrollY = 0;
+      _scrollXNotifier.value = 0;
+      _scrollYNotifier.value = 0;
       _activeMode = EditorMode.none; 
       _pendingEraser = null; 
     });
@@ -541,8 +543,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
             final double sy = -_transformationController.value.getTranslation().y;
             final double sx = -_transformationController.value.getTranslation().x;
             
-            _scrollX = sx;
-            _scrollY = sy;
+            _scrollXNotifier.value = sx;
+            _scrollYNotifier.value = sy;
             if (_zoomNotifier.value != zoom) {
               _zoomNotifier.value = zoom;
             }
@@ -630,83 +632,121 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                       child: Container(color: Colors.transparent),
                     ),
                   ),
-                  ...List.generate(doc.pageWidths.length, (index) {
-                    final double top = _cachedPagePixelOffsets[index];
-                    return Positioned(
-                      top: top + 15,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(10, 5, 2, 5),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.85),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            bottomLeft: Radius.circular(20),
-                          ),
-                        ),
-                        child: Text(
-                          '${index + 1} / ${doc.pageWidths.length}',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                  ValueListenableBuilder<double>(
+                    valueListenable: _scrollYNotifier,
+                    builder: (context, scrollY, _) => ValueListenableBuilder<double>(
+                      valueListenable: _zoomNotifier,
+                      builder: (context, zoom, _) {
+                        return Stack(
+                          children: List.generate(doc.pageWidths.length, (index) {
+                            final double top = _cachedPagePixelOffsets[index];
+                            final double bottom = (index + 1 < _cachedPagePixelOffsets.length) 
+                                ? _cachedPagePixelOffsets[index + 1] 
+                                : _cachedTotalDocHeight;
+                            
+                            final double viewTop = scrollY / zoom;
+                            final double viewBottom = (scrollY + MediaQuery.of(context).size.height) / zoom;
+
+                            if (bottom < viewTop || top > viewBottom) return const SizedBox.shrink();
+
+                            return Positioned(
+                              top: top + 15,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(10, 5, 2, 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.85),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    bottomLeft: Radius.circular(20),
+                                  ),
+                                ),
+                                child: Text(
+                                  '${index + 1} / ${doc.pageWidths.length}',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                  ),
 
                   // Optimize: Use Consumer to isolate field rebuilds
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final fields = ref.watch(pdfEditorProvider.select((s) => s.value?.fields ?? []));
-                      final newFields = fields.where((f) => f.isNewField).toList();
-                      
-                      return Stack(
-                        children: newFields.map((field) {
-                          final int pIdx = field.pageIndex;
-                          if (pIdx >= _cachedPageScales.length) return const SizedBox.shrink();
+                  ValueListenableBuilder<double>(
+                    valueListenable: _scrollYNotifier,
+                    builder: (context, scrollY, _) => ValueListenableBuilder<double>(
+                      valueListenable: _zoomNotifier,
+                      builder: (context, zoom, _) {
+                        return Consumer(
+                          builder: (context, ref, _) {
+                            final fields = ref.watch(pdfEditorProvider.select((s) => s.value?.fields ?? []));
+                            final newFields = fields.where((f) => f.isNewField).toList();
+                            
+                            final double viewTop = scrollY / zoom;
+                            final double viewBottom = (scrollY + MediaQuery.of(context).size.height) / zoom;
 
-                          final double pageScale = _cachedPageScales[pIdx];
-                          final double pageTopPixel = _cachedPagePixelOffsets[pIdx];
+                            return Stack(
+                              children: newFields.where((field) {
+                                final int pIdx = field.pageIndex;
+                                if (pIdx >= _cachedPagePixelOffsets.length) return false;
+                                
+                                final double top = _cachedPagePixelOffsets[pIdx] + field.y;
+                                final double bottom = top + field.height;
+                                
+                                return !(bottom < viewTop || top > viewBottom);
+                              }).map((field) {
+                                final int pIdx = field.pageIndex;
+                                if (pIdx >= _cachedPageScales.length) return const SizedBox.shrink();
 
-                          final double screenX = field.x * pageScale;
-                          final double screenY = pageTopPixel + (field.y * pageScale);
+                                final double pageScale = _cachedPageScales[pIdx];
+                                final double pageTopPixel = _cachedPagePixelOffsets[pIdx];
 
-                          return Positioned(
-                            left: screenX,
-                            top: screenY,
-                            child: RepaintBoundary( // Isolation layer for EACH field
-                              key: ValueKey(field.id),
-                              child: PdfFieldOverlay(
-                                field: field,
-                                scale: pageScale,
-                                offset: Offset(screenX, screenY),
-                                onUpdatePosition: (dx, dy) {
-                                  ref.read(pdfEditorProvider.notifier).updateFieldPosition(
-                                        field.id,
-                                        field.x + (dx / pageScale),
-                                        field.y + (dy / pageScale),
-                                      );
-                                },
-                                onEdit: () => _onEditField(field),
-                                isEraserMode: _activeMode == EditorMode.aiTools && _activeAiTool == 'erase',
-                                onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
-                                onResize: (dw, dh) {
-                                  final double newW = field.width + (dw / pageScale);
-                                  final double newH = field.height + (dh / pageScale);
-                                  ref.read(pdfEditorProvider.notifier).updateFieldSize(
-                                        field.id,
-                                        newW > 10 ? newW : 10,
-                                        newH > 10 ? newH : 10,
-                                      );
-                                },
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
+                                final double screenX = field.x * pageScale;
+                                final double screenY = pageTopPixel + (field.y * pageScale);
+
+                                return Positioned(
+                                  left: screenX,
+                                  top: screenY,
+                                  child: RepaintBoundary(
+                                    key: ValueKey(field.id),
+                                    child: PdfFieldOverlay(
+                                      field: field,
+                                      scale: pageScale,
+                                      offset: Offset(screenX, screenY),
+                                      onUpdatePosition: (dx, dy) {
+                                        ref.read(pdfEditorProvider.notifier).updateFieldPosition(
+                                              field.id,
+                                              field.x + (dx / pageScale),
+                                              field.y + (dy / pageScale),
+                                            );
+                                      },
+                                      onEdit: () => _onEditField(field),
+                                      isEraserMode: _activeMode == EditorMode.aiTools && _activeAiTool == 'erase',
+                                      onErase: () => ref.read(pdfEditorProvider.notifier).removeField(field.id),
+                                      onResize: (dw, dh) {
+                                        final double newW = field.width + (dw / pageScale);
+                                        final double newH = field.height + (dh / pageScale);
+                                        ref.read(pdfEditorProvider.notifier).updateFieldSize(
+                                              field.id,
+                                              newW > 10 ? newW : 10,
+                                              newH > 10 ? newH : 10,
+                                            );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
 
 
