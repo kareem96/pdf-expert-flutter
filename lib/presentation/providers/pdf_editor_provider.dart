@@ -8,6 +8,8 @@ import '../../data/services/recent_files_service.dart';
 import '../../domain/entities/page_action.dart';
 import 'repository_providers.dart';
 
+import '../../data/services/device_info_service.dart';
+
 part 'pdf_editor_provider.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -32,8 +34,9 @@ class PdfEditor extends _$PdfEditor {
     _history.add(doc);
     _historyIndex = _history.length - 1;
     
-    // Batasi history maksimal misal 50 step untuk hemat RAM
-    if (_history.length > 50) {
+    // Batasi history untuk hemat RAM (Low RAM: 5 step, Normal: 20 step)
+    final limit = DeviceInfoService.isLowMemory ? 5 : 20;
+    if (_history.length > limit) {
       _history.removeAt(0);
       _historyIndex--;
     }

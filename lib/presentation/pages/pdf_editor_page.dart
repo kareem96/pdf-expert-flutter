@@ -111,6 +111,10 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
     _zoomNotifier.dispose();
     _scrollXNotifier.dispose();
     _scrollYNotifier.dispose();
+    
+    // Force clear image cache to free up memory from PDF thumbnail/image overlays
+    PaintingBinding.instance.imageCache.clear();
+    
     super.dispose();
   }
 
@@ -587,8 +591,9 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                               canShowScrollHead: false, 
                               canShowScrollStatus: false,
                             )
-                          : Container(color: Theme.of(context).scaffoldBackgroundColor),
-                      ),
+                          : Center(
+                              child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+                            ),                      ),
                     ),
 
                   Positioned.fill(

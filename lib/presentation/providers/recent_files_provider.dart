@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../data/services/recent_files_service.dart';
+import '../../data/services/draft_service.dart';
 import 'repository_providers.dart';
 
 part 'recent_files_provider.g.dart';
@@ -12,16 +13,30 @@ class RecentFiles extends _$RecentFiles {
     final service = ref.watch(recentFilesServiceProvider);
     final files = await service.getRecentFiles();
     
-    // Verify each file still exists on disk
-    final valid = <RecentFileEntry>[];
-    for (final f in files) {
-      if (await File(f.filePath).exists()) {
-        valid.add(f);
-      } else {
-        await service.removeFile(f.filePath);
+    // Pre-verify existence in parallel to avoid UI jank from sequential I/O
+    final checkResults = await Future.wait(files.map((f) async {
+      final exists = await File(f.filePath).exists();
+      if (!exists) {
+        // Schedule cleanup without blocking the UI return
+        service.removeFile(f.filePath).catchError((_) {});
+        return null;
       }
-    }
-    return valid;
+      
+      // Auto-clean draft if older than 7 days
+      var validatedFile = f;
+      if (f.hasDraft) {
+        final daysPassed = DateTime.now().difference(f.lastOpened).inDays;
+        if (daysPassed >= 7) {
+          DraftService().deleteDraft(f.filePath).catchError((_) {});
+          service.updateDraftStatus(f.filePath, hasDraft: false).catchError((_) {});
+          validatedFile = f.copyWith(hasDraft: false);
+        }
+      }
+      
+      return validatedFile;
+    }));
+    
+    return checkResults.whereType<RecentFileEntry>().toList();
   }
 
   Future<void> recordFileOpened(String path, {bool? hasDraft, bool? isEdited}) async {

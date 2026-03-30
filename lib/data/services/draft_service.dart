@@ -44,9 +44,15 @@ class DraftService {
 
     // If currentPdfPath is different from original (meaning page reorder/structural change),
     // save a copy of the modified PDF as part of the draft.
+    final draftPdfFile = File('${dir.path}/${_draftPdfName(originalPdfPath)}');
     if (currentPdfPath != null && currentPdfPath != originalPdfPath) {
-      final draftPdfFile = File('${dir.path}/${_draftPdfName(originalPdfPath)}');
       await File(currentPdfPath).copy(draftPdfFile.path);
+    } else {
+      // Avoid redundancy: if there are no Structural changes, delete any old redundant draft PDF copy
+      // to drastically save device storage (often 5MB - 50MB per file).
+      if (await draftPdfFile.exists()) {
+        await draftPdfFile.delete();
+      }
     }
   }
 

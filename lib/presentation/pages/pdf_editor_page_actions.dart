@@ -131,6 +131,7 @@ extension _PdfEditorActions on _PdfEditorPageState {
          );
        },
     );
+    signatureController.dispose();
   }
 
   Future<void> _onSave(PdfDocumentEntity doc) async {

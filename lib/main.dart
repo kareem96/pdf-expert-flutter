@@ -7,6 +7,8 @@ import 'presentation/providers/app_theme_provider.dart';
 import 'presentation/providers/app_language_provider.dart';
 import 'presentation/theme/app_theme.dart';
 
+import 'data/services/device_info_service.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -17,6 +19,14 @@ void main() {
       child: MyApp(),
     ),
   );
+  
+  // Deferred Initialization: Pindahkan eksekusi berat non-UI ke background task
+  // setelah frame pertama berhasil di-render agar startup instan.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.microtask(() async {
+      await DeviceInfoService.initialize();
+    });
+  });
 }
 
 class MyApp extends ConsumerWidget {

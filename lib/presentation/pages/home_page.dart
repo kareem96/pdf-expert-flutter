@@ -227,7 +227,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     ref.watch(appStringsProvider);
-    final recentFilesAsync = ref.watch(recentFilesProvider);
     final double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -303,21 +302,25 @@ class _HomePageState extends ConsumerState<HomePage> {
               ), // Removed .animate() for instant first paint to avoid black gap
 
               Expanded(
-                child: recentFilesAsync.when(
-                  data: (recentFiles) {
-                    final searchedFiles = recentFiles.where((f) {
-                      if (_searchQuery.isEmpty) return true;
-                      return f.fileName.toLowerCase().contains(_searchQuery.toLowerCase());
-                    }).toList();
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final recentFilesAsync = ref.watch(recentFilesProvider);
+                    
+                    return recentFilesAsync.when(
+                      data: (recentFiles) {
+                        final searchedFiles = recentFiles.where((f) {
+                          if (_searchQuery.isEmpty) return true;
+                          return f.fileName.toLowerCase().contains(_searchQuery.toLowerCase());
+                        }).toList();
 
-                    final filteredFiles = searchedFiles.where((f) {
-                      if (_activeTab == 1) return !f.isEdited;
-                      if (_activeTab == 2) return f.isEdited;
-                      return true;
-                    }).toList();
+                        final filteredFiles = searchedFiles.where((f) {
+                          if (_activeTab == 1) return !f.isEdited;
+                          if (_activeTab == 2) return f.isEdited;
+                          return true;
+                        }).toList();
 
-                    final latestDraft = recentFiles.where((f) => f.hasDraft).firstOrNull;
-                    final bool isTablet = AdaptiveLayoutWrapper.isTablet(context);
+                        final latestDraft = recentFiles.where((f) => f.hasDraft).firstOrNull;
+                        final bool isTablet = AdaptiveLayoutWrapper.isTablet(context);
 
                     Widget mainList = CustomScrollView(
                       slivers: [
@@ -451,11 +454,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ],
                     );
                   },
-                  loading: () => const SizedBox.shrink(), // Should be unreachable because Splash waits
+                  loading: () => const SizedBox.shrink(),
                   error: (e, s) => Center(child: Text('Error: $e')),
-                ),
-              ),
-            ],
+                );
+              },
+            ),
+          ),
+        ],
           ),
         ),
       ),
@@ -529,10 +534,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             width: double.infinity,
             height: 56,
             child: ElevatedButton.icon(
-              onPressed: () => _openFile(entry.filePath, restoreDraft: entry.hasDraft),
-              icon: Icon(entry.hasDraft ? Icons.edit_note_rounded : Icons.menu_book_rounded),
+              onPressed: _isOpening ? null : () => _openFile(entry.filePath, restoreDraft: entry.hasDraft),
+              icon: _isOpening 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                  : Icon(entry.hasDraft ? Icons.edit_note_rounded : Icons.menu_book_rounded),
               label: Text(
-                entry.hasDraft ? AppStrings.continueEditing : AppStrings.openPdf,
+                _isOpening ? AppStrings.preparingDocument : (entry.hasDraft ? AppStrings.continueEditing : AppStrings.openPdf),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
@@ -865,6 +872,9 @@ class _RecentFileTile extends ConsumerWidget {
     ref.watch(appStringsProvider);
     final thumbAsync = ref.watch(pdfThumbnailProvider(entry.filePath));
 
+    final int daysPassed = DateTime.now().difference(entry.lastOpened).inDays;
+    final int daysLeft = (7 - daysPassed).clamp(0, 7);
+
     Widget content;
     if (isGrid) {
       content = AnimatedContainer(
@@ -899,7 +909,15 @@ class _RecentFileTile extends ConsumerWidget {
                     Positioned.fill(
                       child: thumbAsync.when(
                         data: (data) => data != null
-                            ? Container(color: Colors.white, child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter))
+                            ? Container(
+                                color: Colors.white, 
+                                child: Image.memory(
+                                  data, 
+                                  fit: BoxFit.cover, 
+                                  alignment: Alignment.topCenter,
+                                  cacheHeight: 250, // Optimize GPU memory for Grid
+                                ),
+                              )
                             : Center(child: Icon(Icons.picture_as_pdf_outlined, color: Colors.red.withValues(alpha: 0.5), size: 40)),
                         loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                         error: (e, s) => const Center(child: Icon(Icons.error_outline)),
@@ -909,9 +927,16 @@ class _RecentFileTile extends ConsumerWidget {
                       Positioned(
                         top: 8, right: 8,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
-                          child: const Icon(Icons.edit, size: 10, color: Colors.black),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(12)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.edit, size: 10, color: Colors.black),
+                              const SizedBox(width: 4),
+                              Text('${daysLeft}d', style: const TextStyle(fontSize: 9, color: Colors.black, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ),
                       ),
                   ],
@@ -983,7 +1008,15 @@ class _RecentFileTile extends ConsumerWidget {
               clipBehavior: Clip.hardEdge,
               child: thumbAsync.when(
                 data: (data) => data != null
-                    ? Container(color: Colors.white, child: Image.memory(data, fit: BoxFit.cover, alignment: Alignment.topCenter))
+                    ? Container(
+                        color: Colors.white, 
+                        child: Image.memory(
+                          data, 
+                          fit: BoxFit.cover, 
+                          alignment: Alignment.topCenter,
+                          cacheHeight: 150, // Optimize GPU memory for List
+                        ),
+                      )
                     : const Icon(Icons.picture_as_pdf, color: Colors.red, size: 30),
                 loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 error: (e, s) => const Icon(Icons.error_outline),
@@ -1010,7 +1043,7 @@ class _RecentFileTile extends ConsumerWidget {
                             color: Colors.amber.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(AppStrings.labelDraft, style: const TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold)),
+                          child: Text('${AppStrings.labelDraft} • ${daysLeft}d', style: const TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.bold)),
                         ),
                     ],
                   ),

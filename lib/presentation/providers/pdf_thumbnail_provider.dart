@@ -32,13 +32,19 @@ final pdfThumbnailProvider = FutureProvider.family<Uint8List?, String>((ref, pat
     }
     
     // 2. Generation Logic: Only if not in cache
-    final bytes = await file.readAsBytes();
+    Uint8List? pdfBytes = await file.readAsBytes();
     
-    // Use low DPI 30 for list view thumbnails to save memory and CPU
+    // Use very low DPI 20 for list view thumbnails to save memory and CPU
+    // This is enough for a small preview (approx 150-200px height)
     Uint8List? pngBytes;
-    await for (final page in Printing.raster(bytes, pages: [0], dpi: 30)) {
-      pngBytes = await page.toPng();
-      break; 
+    try {
+      await for (final page in Printing.raster(pdfBytes, pages: [0], dpi: 20)) {
+        pngBytes = await page.toPng();
+        break; 
+      }
+    } finally {
+      // Clear bytes immediately to free heavy memory
+      pdfBytes = null;
     }
 
     if (pngBytes != null) {
