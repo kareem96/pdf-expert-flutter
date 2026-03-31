@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Security: Sensitivity files (Exclude from Public Repo)
+/android/key.properties
+/android/local.properties
+*.jks
+*.keystore
+.env
