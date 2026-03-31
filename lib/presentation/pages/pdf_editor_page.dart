@@ -164,9 +164,16 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
-    // Optimize: Only watch essential metadata to avoid full page rebuilds
-    final docAsData = ref.watch(pdfEditorProvider.select((s) => s.asData));
-    final doc = docAsData?.value;
+    // TUNING: Listen ke error provider untuk kasih feedback instan ke user (Informan)
+    ref.listen<AsyncValue>(pdfEditorProvider, (previous, next) {
+      if (next is AsyncError) {
+        CustomToast.show(context, message: '${AppStrings.toastFailLoad}${next.error}');
+      }
+    });
+
+    // TUNING: Gunakan watch penuh ke async value agar status Error bisa terdeteksi dengan benar (Anti-Hanging)
+    final pdfState = ref.watch(pdfEditorProvider);
+    final doc = pdfState.valueOrNull;
 
     final isEditing = doc != null;
 
@@ -229,22 +236,63 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
           if (context.mounted) Navigator.of(context).pop();
         }
       },
-      child: docAsData == null || docAsData.isLoading
-        ? Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
-          )
-        : docAsData.hasError ? 
-          Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: Center(
-              child: Text('${AppStrings.error}: ${docAsData.error}', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+      child: pdfState.when(
+        loading: () => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+                const SizedBox(height: 16),
+                Text(AppStrings.preparingDocument, style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+              ],
             ),
-          )
-        : (() {
-          final doc = docAsData.value;
-
-
+          ),
+        ),
+        error: (err, stack) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 64),
+                  const SizedBox(height: 20),
+                  Text(
+                    AppStrings.error,
+                    style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    err.toString(),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: 200,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ref.read(pdfEditorProvider.notifier).clearDocument();
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6C63FF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(AppStrings.ok, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        data: (doc) {
           if (doc == null) {
             return Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -384,7 +432,8 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                   )
                 : null,
           );
-        }()),
+        },
+      ),
     );
   }
 
@@ -589,7 +638,9 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                               enableDoubleTapZooming: false,
                               canShowPaginationDialog: false,
                               canShowScrollHead: false, 
-                              canShowScrollStatus: false,
+                              onDocumentLoadFailed: (details) {
+                                CustomToast.show(context, message: 'Gagal memuat dokumen: ${details.error}');
+                              },
                             )
                           : Center(
                               child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
@@ -642,18 +693,34 @@ class _PdfEditorPageState extends ConsumerState<PdfEditorPage> with WidgetsBindi
                     builder: (context, scrollY, _) => ValueListenableBuilder<double>(
                       valueListenable: _zoomNotifier,
                       builder: (context, zoom, _) {
+                        // TUNING: Cari range index halaman yang terlihat saja (Scroll Performance)
+                        final double viewTop = scrollY / zoom;
+                        final double viewBottom = (scrollY + constraints.maxHeight) / zoom;
+                        
+                        int startIndex = -1;
+                        int endIndex = -1;
+                        
+                        for (int i = 0; i < _cachedPagePixelOffsets.length; i++) {
+                          final double top = _cachedPagePixelOffsets[i];
+                          final double bottom = (i + 1 < _cachedPagePixelOffsets.length) 
+                              ? _cachedPagePixelOffsets[i + 1] 
+                              : _cachedTotalDocHeight;
+                              
+                          if (bottom >= viewTop && top <= viewBottom) {
+                            if (startIndex == -1) startIndex = i;
+                            endIndex = i;
+                          } else if (top > viewBottom) {
+                            break; // Karena offsets sudah sorted, sisanya pasti di luar range
+                          }
+                        }
+
+                        if (startIndex == -1) return const SizedBox.shrink();
+
                         return Stack(
-                          children: List.generate(doc.pageWidths.length, (index) {
+                          children: List.generate(endIndex - startIndex + 1, (i) {
+                            final int index = startIndex + i;
                             final double top = _cachedPagePixelOffsets[index];
-                            final double bottom = (index + 1 < _cachedPagePixelOffsets.length) 
-                                ? _cachedPagePixelOffsets[index + 1] 
-                                : _cachedTotalDocHeight;
                             
-                            final double viewTop = scrollY / zoom;
-                            final double viewBottom = (scrollY + MediaQuery.of(context).size.height) / zoom;
-
-                            if (bottom < viewTop || top > viewBottom) return const SizedBox.shrink();
-
                             return Positioned(
                               top: top + 15,
                               right: 0,

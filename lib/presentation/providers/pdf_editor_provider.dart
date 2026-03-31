@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../common/constants/app_strings.dart';
 import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/entities/pdf_field_entity.dart';
 import '../../domain/usecases/load_pdf_usecase.dart';
@@ -58,7 +59,11 @@ class PdfEditor extends _$PdfEditor {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(pdfRepositoryProvider);
-      final doc = await LoadPdfUseCase(repository).call(path);
+      final doc = await LoadPdfUseCase(repository)
+          .call(path)
+          .timeout(const Duration(seconds: 15), onTimeout: () {
+        throw Exception(AppStrings.errorTimeout);
+      });
       
       PdfDocumentEntity finalDoc = doc.copyWith(
         originalPath: originalPath ?? doc.originalPath,

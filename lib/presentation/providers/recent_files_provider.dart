@@ -46,9 +46,16 @@ class RecentFiles extends _$RecentFiles {
   }
 
   Future<void> removeFile(String path) async {
+    // TUNING: Optimistic update agar Dismissible tidak error (langsung hilang dari UI)
+    final currentState = state.value;
+    if (currentState != null) {
+      state = AsyncData(currentState.where((e) => e.filePath != path).toList());
+    }
+
     final service = ref.read(recentFilesServiceProvider);
     await service.removeFile(path);
-    ref.invalidateSelf();
+    // InvalidateSelf dipanggil untuk memastikan sync dengan disk jika ada perubahan lain
+    ref.invalidateSelf(); 
   }
 
   Future<void> renameFile(String oldPath, String newName) async {

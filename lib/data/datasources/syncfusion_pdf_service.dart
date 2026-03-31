@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+import '../../common/constants/app_strings.dart';
 import '../../domain/entities/pdf_document_entity.dart';
 import '../../domain/entities/pdf_field_entity.dart';
 
@@ -22,25 +24,27 @@ class SyncfusionPdfService {
       final List<double> pageWidths = [];
       final List<double> pageHeights = [];
       
-      if (document.pages.count > 0) {
-        for (int i = 0; i < document.pages.count; i++) {
-          final page = document.pages[i];
-          final int rotation = _mapPdfRotation(page.rotation);
-          final bool isLandscape = rotation == 90 || rotation == 270;
-          
-          final double pw = isLandscape ? page.size.height : page.size.width;
-          final double ph = isLandscape ? page.size.width : page.size.height;
+      if (document.pages.count == 0) {
+        throw Exception(AppStrings.errorUnsupportedPdf);
+      }
 
-          if (i == 0) {
-            pageWidth = pw;
-            pageHeight = ph;
-          }
+      for (int i = 0; i < document.pages.count; i++) {
+        final page = document.pages[i];
+        final int rotation = _mapPdfRotation(page.rotation);
+        final bool isLandscape = rotation == 90 || rotation == 270;
+        
+        final double pw = isLandscape ? page.size.height : page.size.width;
+        final double ph = isLandscape ? page.size.width : page.size.height;
 
-          pageWidths.add(pw);
-          pageHeights.add(ph);
-          pageOffsets.add(currentOffset);
-          currentOffset += ph + pageSpacing;
+        if (i == 0) {
+          pageWidth = pw;
+          pageHeight = ph;
         }
+
+        pageWidths.add(pw);
+        pageHeights.add(ph);
+        pageOffsets.add(currentOffset);
+        currentOffset += ph + pageSpacing;
       }
 
       final PdfForm form = document.form;
@@ -84,17 +88,10 @@ class SyncfusionPdfService {
         pageHeights: pageHeights,
         pageOffsets: pageOffsets,
       );
-    } catch (_) {}
-    
-    return PdfDocumentEntity(
-      filePath: path,
-      originalPath: path,
-      fileName: path.split('/').last,
-      fields: fields,
-      pageWidth: pageWidth,
-      pageHeight: pageHeight,
-      pageOffsets: pageOffsets,
-    );
+    } catch (e) {
+      // TUNING: Jangan silent failure, lempar error agar UI bisa kasih notifikasi
+      throw Exception('${AppStrings.errorUnsupportedPdf}: $e');
+    }
   }
 
   PdfFieldType _mapFieldType(PdfField field) {
@@ -138,7 +135,9 @@ class SyncfusionPdfService {
       if (field != null) {
         try {
           field.bounds = Rect.fromLTWH(fieldEntity.x, fieldEntity.y, fieldEntity.width, fieldEntity.height);
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) print('Error setting field bounds: $e');
+        }
         _setFieldValue(field, fieldEntity.value);
       }
     }
@@ -251,7 +250,8 @@ class SyncfusionPdfService {
               graphics.drawLine(pen, Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.25), Offset(rect.left + rect.width * 0.25, rect.top + rect.height * 0.75));
             }
           }
-        } catch (_) {
+        } catch (e) {
+          if (kDebugMode) print('Error drawing field: $e');
         } finally {
           graphics.restore();
         }
@@ -299,8 +299,11 @@ class SyncfusionPdfService {
       final dynamic dynamicField = field;
       final page = dynamicField.page;
       if (page != null) return doc.pages.indexOf(page);
-    } catch (_) {}
-    return 0;
+      return 0;
+    } catch (e) {
+      if (kDebugMode) print('Error getting field index: $e');
+      return 0;
+    }
   }
 
   Future<Rect?> extractWordBoundsAt(String filePath, int pageIndex, double x, double y, {double pad = 6.0}) async {
@@ -329,7 +332,8 @@ class SyncfusionPdfService {
       }
       document.dispose();
       return closestWord?.bounds.inflate(0.5);
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) print('Error extracting word bounds: $e');
       return null;
     }
   }

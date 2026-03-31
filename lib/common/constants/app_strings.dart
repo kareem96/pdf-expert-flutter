@@ -166,4 +166,9 @@ class AppStrings {
   static String get cannotDeleteLastPage => _s == 'id' ? 'Tidak bisa menghapus halaman terakhir' : 'Cannot delete the last page';
   static String get byKDevLab => 'by K-Dev Lab';
   static String get labelEdited => _s == 'id' ? 'Diedit' : 'Edited';
+  
+  // Error handling strings (Localization Audit)
+  static String get errorTimeout => _s == 'id' ? 'Pemuatan PDF melebihi batas waktu (Timeout). File mungkin rusak atau terlalu berat.' : 'PDF loading timed out. File might be corrupted or too large.';
+  static String get errorUnsupportedPdf => _s == 'id' ? 'Format PDF tidak didukung atau file korup' : 'Unsupported PDF format or corrupted file';
+  static String get toastFailLoad => _s == 'id' ? 'Gagal memuat: ' : 'Failed to load: ';
 }

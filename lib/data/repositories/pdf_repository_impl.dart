@@ -19,7 +19,8 @@ class PdfRepositoryImpl implements IPdfRepository {
 
   @override
   Future<PdfDocumentEntity> loadPdf(String path) {
-    return pdfService.parsePdf(path);
+    // TUNING: Pindah parsing PDF ke Isolate agar tidak memblokir Main Thread (UI Jank)
+    return compute(_loadPdfIsolate, path);
   }
 
   @override
@@ -61,10 +62,10 @@ class PdfRepositoryImpl implements IPdfRepository {
       final directory = await getApplicationDocumentsDirectory();
       dirPath = directory.path;
     }
-    String finalName = customName;
-    String targetPath = '$dirPath/$finalName';
     
     // Auto-rename logic to prevent overwriting
+    String finalName = customName;
+    String targetPath = '$dirPath/$finalName';
     int counter = 1;
     while (await File(targetPath).exists()) {
       final String nameWithoutExt = customName.endsWith('.pdf') 
@@ -74,11 +75,12 @@ class PdfRepositoryImpl implements IPdfRepository {
       targetPath = '$dirPath/$finalName';
       counter++;
     }
-    
-    return pdfService.saveModifiedPdf(
-      documentEntity: document,
-      targetPath: targetPath,
-    );
+
+    // TUNING: Gunakan compute untuk pindahkan pemrosesan berat ke Isolate
+    return compute(_savePdfIsolate, {
+      'document': document,
+      'targetPath': targetPath,
+    });
   }
 
   @override
@@ -101,10 +103,43 @@ class PdfRepositoryImpl implements IPdfRepository {
     final String fileName = sourcePath.split('/').last;
     final String targetPath = '${tempDir.path}/modified_${DateTime.now().millisecondsSinceEpoch}_$fileName';
     
-    return pageService.processPageChanges(
-      sourcePath: sourcePath,
-      actions: actions,
-      targetPath: targetPath,
-    );
+    // TUNING: Gunakan compute untuk pindahkan pemrosesan berat ke Isolate
+    return compute(_applyPageChangesIsolate, {
+      'sourcePath': sourcePath,
+      'actions': actions,
+      'targetPath': targetPath,
+    });
   }
+}
+
+/// Helper function (Top-level) for Save PDF Isolate
+Future<File> _savePdfIsolate(Map<String, dynamic> args) async {
+  final SyncfusionPdfService service = SyncfusionPdfService();
+  final PdfDocumentEntity document = args['document'];
+  final String targetPath = args['targetPath'];
+  
+  return service.saveModifiedPdf(
+    documentEntity: document,
+    targetPath: targetPath,
+  );
+}
+
+/// Helper function (Top-level) for Page Changes Isolate
+Future<File> _applyPageChangesIsolate(Map<String, dynamic> args) async {
+  final PdfPageService service = PdfPageService();
+  final String sourcePath = args['sourcePath'];
+  final List<PageAction> actions = args['actions'];
+  final String targetPath = args['targetPath'];
+  
+  return service.processPageChanges(
+    sourcePath: sourcePath,
+    actions: actions,
+    targetPath: targetPath,
+  );
+}
+
+/// Helper function (Top-level) for Load PDF Isolate
+Future<PdfDocumentEntity> _loadPdfIsolate(String path) async {
+  final SyncfusionPdfService service = SyncfusionPdfService();
+  return service.parsePdf(path);
 }
