@@ -1113,35 +1113,38 @@ class _RecentFileTile extends ConsumerWidget {
           color: Theme.of(context).cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: Text(AppStrings.actionRename),
-              onTap: () { Navigator.pop(ctx); onRename(); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: Text(AppStrings.modeShare),
-              onTap: () { Navigator.pop(ctx); Share.share(entry.filePath); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              title: Text(AppStrings.actionDelete, style: const TextStyle(color: Colors.redAccent)),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final confirmed = await _showDeleteDialog(context);
-                if (confirmed) onDismiss();
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
+        child: SafeArea(
+          top: false, // Hanya butuh padding bawah
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: Text(AppStrings.actionRename),
+                onTap: () { Navigator.pop(ctx); onRename(); },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_outlined),
+                title: Text(AppStrings.modeShare),
+                onTap: () { Navigator.pop(ctx); Share.share(entry.filePath); },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                title: Text(AppStrings.actionDelete, style: const TextStyle(color: Colors.redAccent)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final confirmed = await _showDeleteDialog(context);
+                  if (confirmed) onDismiss();
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );

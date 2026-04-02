@@ -86,158 +86,169 @@ class _PdfFieldOverlayState extends State<PdfFieldOverlay> {
     final bool isEraser = widget.field.type == PdfFieldType.eraser;
     final bool isMarker = widget.field.type == PdfFieldType.marker;
 
+    final bool currentIsResizable = isImageOrSign || isMarker;
+
+    final double minSize = 15.0;
     final double currentWidth = (isEraser || isMarker) 
-        ? ((widget.field.width * widget.scale) + _resizeDw)
-        : math.max(20.0, (widget.field.width * widget.scale) + _resizeDw);
+        ? math.max(minSize, (widget.field.width * widget.scale) + _resizeDw)
+        : math.max(minSize, (widget.field.width * widget.scale) + _resizeDw);
     final double currentHeight = (isEraser || isMarker) 
-        ? ((widget.field.height * widget.scale) + _resizeDh)
-        : math.max(20.0, (widget.field.height * widget.scale) + _resizeDh);
+        ? math.max(minSize, (widget.field.height * widget.scale) + _resizeDh)
+        : math.max(minSize, (widget.field.height * widget.scale) + _resizeDh);
 
     return Transform.translate(
       offset: Offset(_dragDx, _dragDy),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                _dragDx += details.delta.dx;
-                _dragDy += details.delta.dy;
-              });
-            },
-            onPanEnd: (details) {
-              final dx = _dragDx;
-              final dy = _dragDy;
-              setState(() {
-                _dragDx = 0;
-                _dragDy = 0;
-              });
-              widget.onUpdatePosition(dx, dy);
-            },
-            onTap: widget.onEdit,
-            child: Container(
-              width: isImageOrSign || isEraser || isMarker ? currentWidth : null,
-              height: isImageOrSign || isEraser || isMarker ? currentHeight : null,
-              padding: EdgeInsets.zero,
-              decoration: BoxDecoration(
-                color: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
-                    ? Colors.transparent 
-                    : (isEraser ? _parseColor(widget.field.backgroundColor ?? '0xFFFFFFFF') : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05)),
-                border: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
-                    ? null
-                    : isEraser 
-                      ? Border.all(color: Colors.grey.withValues(alpha: 0.5), width: 1)
-                      : Border.all(
-                          color: Colors.blue.withValues(alpha: 0.8), 
-                          width: 1.5, 
-                        ),
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: isEraser ? null : [
-                  BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-                child: isImageOrSign
-                  ? (widget.field.value != null && widget.field.value!.isNotEmpty)
-                      ? Image.file(
-                          File(widget.field.value!),
-                          width: currentWidth,
-                          height: currentHeight,
-                          fit: BoxFit.fill,
-                        )
-                      : const SizedBox.shrink()
-                    : isEraser
-                        ? SizedBox(
+      child: SizedBox(
+        width: currentWidth + 60,
+        height: currentHeight + 60,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _dragDx += details.delta.dx;
+                  _dragDy += details.delta.dy;
+                });
+              },
+              onPanEnd: (details) {
+                final dx = _dragDx;
+                final dy = _dragDy;
+                setState(() {
+                  _dragDx = 0;
+                  _dragDy = 0;
+                });
+                widget.onUpdatePosition(dx, dy);
+              },
+              onTap: widget.onEdit,
+              child: Container(
+                width: isImageOrSign || isEraser || isMarker ? currentWidth : null,
+                height: isImageOrSign || isEraser || isMarker ? currentHeight : null,
+                padding: EdgeInsets.zero,
+                decoration: BoxDecoration(
+                  color: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
+                      ? Colors.transparent 
+                      : (isEraser ? _parseColor(widget.field.backgroundColor ?? '0xFFFFFFFF') : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05)),
+                  border: (isImageOrSign && (widget.field.value == null || widget.field.value!.isEmpty))
+                      ? null
+                      : isEraser 
+                        ? Border.all(color: Colors.grey.withValues(alpha: 0.5), width: 1)
+                        : Border.all(
+                            color: Colors.blue.withValues(alpha: 0.8), 
+                            width: 1.5, 
+                          ),
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: isEraser ? null : [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                  child: isImageOrSign
+                    ? (widget.field.value != null && widget.field.value!.isNotEmpty)
+                        ? Image.file(
+                            File(widget.field.value!),
                             width: currentWidth,
                             height: currentHeight,
+                            fit: BoxFit.fill,
                           )
-                    : isMarker
-                        ? SizedBox(
-                            width: currentWidth,
-                            height: currentHeight,
-                            child: FittedBox(
-                              fit: BoxFit.contain,
-                              child: buildMarkerWidget(
-                                widget.field.value, 
-                                widget.field.width, 
-                                widget.field.height,
-                                color: _parseColor(widget.field.textColor),
+                        : const SizedBox.shrink()
+                      : isEraser
+                          ? SizedBox(
+                              width: currentWidth,
+                              height: currentHeight,
+                            )
+                      : isMarker
+                          ? SizedBox(
+                              width: currentWidth,
+                              height: currentHeight,
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: buildMarkerWidget(
+                                  widget.field.value, 
+                                  widget.field.width, 
+                                  widget.field.height,
+                                  color: _parseColor(widget.field.textColor),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              padding: widget.field.backgroundColor != null 
+                                  ? const EdgeInsets.symmetric(horizontal: 8, vertical: 8)
+                                  : EdgeInsets.zero,
+                              decoration: widget.field.backgroundColor != null 
+                                  ? BoxDecoration(
+                                      color: _parseColor(widget.field.backgroundColor!),
+                                      border: Border.all(color: Colors.amber.shade600, width: 2),
+                                      borderRadius: BorderRadius.circular(4),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.15),
+                                          blurRadius: 6,
+                                          offset: const Offset(2, 4),
+                                        ),
+                                      ],
+                                    ) 
+                                  : null,
+                              child: Text(
+                                widget.field.value ?? '',
+                                style: _buildGoogleFontStyle(
+                                  widget.field.fontFamily,
+                                  fontSize: widget.field.fontSize * widget.scale,
+                                  color: _parseColor(widget.field.textColor),
+                                  fontWeight: widget.field.isBold ? FontWeight.bold : FontWeight.normal,
+                                  fontStyle: widget.field.isItalic ? FontStyle.italic : FontStyle.normal,
+                                ).copyWith(height: 1.1),
+                                softWrap: false,
+                                overflow: TextOverflow.visible,
                               ),
                             ),
-                          )
-                        : Container(
-                            padding: widget.field.backgroundColor != null 
-                                ? const EdgeInsets.symmetric(horizontal: 8, vertical: 8)
-                                : EdgeInsets.zero,
-                            decoration: widget.field.backgroundColor != null 
-                                ? BoxDecoration(
-                                    color: _parseColor(widget.field.backgroundColor!),
-                                    border: Border.all(color: Colors.amber.shade600, width: 2),
-                                    borderRadius: BorderRadius.circular(4),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.15),
-                                        blurRadius: 6,
-                                        offset: const Offset(2, 4),
-                                      ),
-                                    ],
-                                  ) 
-                                : null,
-                            child: Text(
-                              widget.field.value ?? '',
-                              style: _buildGoogleFontStyle(
-                                widget.field.fontFamily,
-                                fontSize: widget.field.fontSize * widget.scale,
-                                color: _parseColor(widget.field.textColor),
-                                fontWeight: widget.field.isBold ? FontWeight.bold : FontWeight.normal,
-                                fontStyle: widget.field.isItalic ? FontStyle.italic : FontStyle.normal,
-                              ).copyWith(height: 1.1),
-                              softWrap: false,
-                              overflow: TextOverflow.visible,
-                            ),
-                          ),
+              ),
             ),
-          ),
-          if (isImageOrSign)
-            Positioned(
-              right: -20,
-              bottom: -20,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanUpdate: (details) {
-                  setState(() {
-                    _resizeDw += details.delta.dx;
-                    // Lock aspect ratio: newHeight = newWidth * (originalHeight / originalWidth)
-                    final ratio = widget.field.height / widget.field.width;
-                    _resizeDh = _resizeDw * ratio;
-                  });
-                },
-                onPanEnd: (details) {
-                  widget.onResize(_resizeDw, _resizeDh);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+            if (currentIsResizable)
+              Positioned(
+                left: currentWidth - 12,
+                top: currentHeight - 12,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _resizeDw += details.delta.dx;
+                      // Logic: Marker use 1:1 ratio, Others use original ratio
+                      if (widget.field.type == PdfFieldType.marker) {
+                        _resizeDh = _resizeDw;
+                      } else {
+                        final ratio = widget.field.height / widget.field.width;
+                        _resizeDh = _resizeDw * ratio;
+                      }
+                    });
+                  },
+                  onPanEnd: (details) {
+                    widget.onResize(_resizeDw, _resizeDh);
+                  },
                   child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.blue, width: 2),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4),
-                      ],
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Colors.blue, width: 3.0),
+                          bottom: BorderSide(color: Colors.blue, width: 3.0),
+                        ),
+                      ),
                     ),
-                    child: const Icon(Icons.open_in_full, size: 16, color: Colors.blue),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
+
   }
 
   TextStyle _buildGoogleFontStyle(
